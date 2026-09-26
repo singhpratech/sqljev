@@ -144,13 +144,16 @@ h1 { font-size: clamp(42px, 6.4vw, 78px); line-height: .98; letter-spacing: -.03
 @media (max-width: 560px) { .result .row { grid-template-columns: 26px 1fr 92px; } .result .row .body { display: none; } }
 
 /* ------------------------------------------------ sections */
-section { padding: 88px 0; position: relative; }
+section { padding: 88px 0; position: relative; scroll-margin-top: 60px; }
+#databases { padding-top: 40px; padding-bottom: 56px; }
+#databases .intro { margin-bottom: 24px; }
 section h2 { font-size: clamp(32px, 4.4vw, 52px); letter-spacing: -.03em; line-height: 1.02; margin: 0 0 14px; font-weight: 780; }
 section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 0 0 40px; }
 .peek { position: absolute; width: 70px; right: 6%; top: -38px; }
 
 /* databases */
 .dbs { display: grid; gap: 0; }
+.dbs > * { min-width: 0; }
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: -2px; position: relative; z-index: 1; }
 @media (max-width: 700px) { .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } }
 .tab { font: inherit; font-size: 16px; font-weight: 600; white-space: nowrap; padding: 12px 16px 11px; cursor: pointer; background: none; color: var(--ink-2);
@@ -159,12 +162,24 @@ section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); }
 .tab small { display: none; }
 .dbhead { font-size: 14px; font-weight: 650; color: var(--code-str); margin: 0 0 4px; }
-.dbcode { background: var(--code-bg); color: var(--code-ink); border-radius: 0 0 var(--radius-l) var(--radius-l); padding: 24px; min-height: 320px; }
+.dbcode { background: var(--code-bg); color: var(--code-ink); border-radius: 0 0 var(--radius-l) var(--radius-l); padding: 20px 24px 12px; }
 .dbcode .how { color: var(--code-dim); font-size: 15px; margin: 0 0 18px; }
-.step { margin: 0 0 16px; opacity: 0; transform: translateY(6px); animation: stepin .35s ease forwards; }
+.step { margin: 0 0 8px; border-radius: 10px; background: color-mix(in srgb, var(--code-ink) 4%, transparent);
+  opacity: 0; transform: translateY(6px); animation: stepin .35s ease forwards; }
 @keyframes stepin { to { opacity: 1; transform: none; } }
-.step-head { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 15px; font-weight: 650; color: var(--code-ink); }
+.step-head { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 15px; font-weight: 650; color: var(--code-ink);
+  cursor: pointer; list-style: none; border-radius: 10px; user-select: none; }
+.step-head::-webkit-details-marker { display: none; }
+.step-head:hover { background: color-mix(in srgb, var(--code-ink) 7%, transparent); }
 .step-head .n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--amber); color: #152238; font-size: 13px; font-weight: 800; flex: none; }
+.step-head .chev { margin-left: auto; width: 10px; height: 10px; border-right: 2px solid var(--code-dim); border-bottom: 2px solid var(--code-dim);
+  transform: rotate(45deg) translateY(-3px); transition: transform .25s ease; }
+.step[open] .step-head .chev { transform: rotate(225deg) translate(-2px, -1px); }
+.step-head .cmd { font: 400 12.5px "JetBrains Mono", monospace; color: var(--code-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; margin-left: 8px; }
+.step[open] .step-head .cmd { visibility: hidden; }
+@media (max-width: 600px) { .step-head .cmd { display: none; } .dbcode { padding: 16px 12px 8px; } }
+.step .snippet { margin: 0 10px 10px; animation: open .28s ease; }
+@keyframes open { from { opacity: 0; transform: translateY(-4px); } }
 .snippet { position: relative; background: color-mix(in srgb, var(--code-ink) 6%, transparent); border: 1px solid color-mix(in srgb, var(--code-ink) 12%, transparent); border-radius: 10px; }
 .snippet pre { margin: 0; padding: 14px 84px 14px 16px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
 .snippet .copy { position: absolute; top: 8px; right: 8px; font: 600 13px "Bricolage Grotesque", sans-serif; padding: 5px 11px; border-radius: 999px; cursor: pointer;
@@ -200,7 +215,7 @@ section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 
 .steps li::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
   background: var(--ink); color: var(--paper); font-weight: 750; margin-bottom: 10px; }
 .steps b { display: block; color: var(--ink); font-size: 18px; margin-bottom: 4px; }
-@media (max-width: 700px) { .pipe .out { width: 44px; } .pipe { height: 260px; } .pipe .gate span { font-size: 12px; } .pipe .owlbox { width: 80px; left: 70%; } .pipe .ans { width: 44px; } }
+@media (max-width: 700px) { .pipe .gate span { display: none; } .pipe .out { width: 44px; } .pipe .gate span { font-size: 12px; } .pipe .owlbox { width: 80px; left: 70%; } .pipe .ans { width: 44px; } }
 
 
 /* benchmark */
@@ -744,9 +759,13 @@ sqljev publish checkpoints/ae --repo your-org/laya-ae     <span class="tok-dim">
     $("#dbhow").textContent = DBS[i][2];
     $("#tab" + i).scrollIntoView({ block: "nearest", inline: "nearest" });
     const box = $("#dbsteps");
-    box.innerHTML = DBS[i][3].map(([title, code], k) => `<div class="step" style="animation-delay:${k * 0.09}s">
-      <div class="step-head"><span class="n">${k + 1}</span>${title}</div>
-      <div class="snippet"><pre>${isSql(code) ? hl(code) : hlShell(code)}</pre><button type="button" class="copy" data-k="${k}" aria-label="Copy step ${k + 1}">Copy</button></div></div>`).join("");
+    box.innerHTML = DBS[i][3].map(([title, code], k) => `<details class="step" style="animation-delay:${k * 0.07}s">
+      <summary class="step-head"><span class="n">${k + 1}</span>${title}<span class="cmd">${code.split("\n")[0].replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span><span class="chev" aria-hidden="true"></span></summary>
+      <div class="snippet"><pre>${isSql(code) ? hl(code) : hlShell(code)}</pre><button type="button" class="copy" data-k="${k}" aria-label="Copy step ${k + 1}">Copy</button></div></details>`).join("");
+    // accordion: opening one step closes the others, so the panel stays one screen tall
+    box.querySelectorAll(".step").forEach(d => d.addEventListener("toggle", () => {
+      if (d.open) box.querySelectorAll(".step[open]").forEach(o => { if (o !== d) o.open = false; });
+    }));
     box.querySelectorAll(".copy").forEach(btn => btn.addEventListener("click", async () => {
       const text = DBS[i][3][+btn.dataset.k][1];
       try { await navigator.clipboard.writeText(text); }
