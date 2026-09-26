@@ -762,7 +762,9 @@ sqljev publish checkpoints/ae --repo your-org/laya-ae     <span class="tok-dim">
     $("#dbpanel").setAttribute("aria-labelledby", "tab" + i);
     $("#dbsub").textContent = DBS[i][0] + ": " + DBS[i][1];
     $("#dbhow").textContent = DBS[i][2];
-    $("#tab" + i).scrollIntoView({ block: "nearest", inline: "nearest" });
+    // keep the selected tab visible inside the (phone-width) tab strip, without ever scrolling the page
+    const t = $("#tab" + i);
+    if (tabs.scrollWidth > tabs.clientWidth) tabs.scrollTo({ left: t.offsetLeft - 16, behavior: reduce ? "auto" : "smooth" });
     const box = $("#dbsteps");
     box.innerHTML = DBS[i][3].map(([title, code], k) => `<details class="step" style="animation-delay:${k * 0.07}s">
       <summary class="step-head"><span class="n">${k + 1}</span>${title}<span class="cmd">${code.split("\n")[0].replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span><span class="chev" aria-hidden="true"></span></summary>
