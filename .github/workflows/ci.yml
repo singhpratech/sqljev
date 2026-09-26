@@ -9,7 +9,7 @@ jobs:
         python: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
@@ -26,7 +26,7 @@ jobs:
         ports: ["1433:1433"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - run: pip install -e ".[dev]" pymssql
       - run: python tests/sqlserver_smoke.py
@@ -46,7 +46,7 @@ jobs:
         options: --health-cmd "mysqladmin ping -pci" --health-interval 5s --health-retries 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - run: pip install -e ".[dev]" "psycopg[binary]" pymysql
       - run: python tests/answers_smoke.py
