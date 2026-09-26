@@ -73,3 +73,17 @@ def test_gateway_backend_client(gateway, requests_made):
     rows = [{"i": i, "b": "angry" if i % 2 else "calm"} for i in range(250)]
     probs = j.prob(rows, "is angry")
     assert probs[:2] == [0.1, 0.9] and j.stats()["requests"] == 3
+
+
+def test_systemone_jev_compatible(gateway, mock_url):
+    """A Jev client (sqljev's own jev backend speaks pg-jev's batch format) runs unchanged against the gateway."""
+    j = Jev(backend="jev", api_url=gateway + "/v1/systemone", api_key="gw-secret", batch_size=20)
+    rows = [{"i": i, "b": "angry" if i % 2 else "calm"} for i in range(30)]
+    assert j.prob(rows, "is angry")[:3] == [0.1, 0.9, 0.1]
+    ch = j.choice(rows[:5], "which team?", ["a", "b"])
+    assert set(ch) <= {"a", "b"}
+    sc = j.score(rows[:5], "how angry", ["lo", "mid", "hi"])
+    assert all(0 <= v <= 2 for v in sc)
+    with pytest.raises(urllib.error.HTTPError) as e:
+        post(gateway + "/v1/systemone", {"state": "hello", "questions": {"q": {"type": "noul", "instructions": "x"}}})
+    assert e.value.code == 400

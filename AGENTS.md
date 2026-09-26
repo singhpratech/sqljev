@@ -14,8 +14,10 @@ System One decision model: Laya (open weights, default) or TypeSafe Jev.
   `laya_question()` is the single source of the Laya prompt; `sqljev dataset` uses it too, so training data
   matches inference. Never import third-party packages at module level here.
 - `src/sqljev/gateway.py`: stdlib HTTP server; one route per database batch protocol, all ending in `engine.call`.
+- `src/sqljev/finetune.py`: dataset records, accuracy, single-GPU fine-tuning, Hub publishing. `src/sqljev/demo.py`:
+  the synthetic benchmark tables (`TASKS`). `bench/run.py` runs them through DuckDB. `notebooks/`: the Colab notebook.
 - `src/sqljev/{duckdb,spark,aws_lambda}.py`: adapters. `cli.py`: query / materialize / dataset / eval /
-  gateway / judge-sqlserver.
+  gateway / judge.
 - `sql/<db>/`: install scripts. `sql/snowflake/install_udf.sql` is **generated** by `scripts/build_sql.py`;
   edit the script or core.py, then regenerate (CI and `tests/test_snowflake_udf.py` fail when stale).
 - `site/`: the GitHub Pages site (mascot: Rowl the owl, `site/assets/rowl.svg`).

@@ -1,0 +1,36 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions: {contents: write, id-token: write}
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Version matches tag
+        run: |
+          v=$(python -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('src/sqljev/core.py').read()).group(1))")
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != version $v"; exit 1; }
+      - run: pip install -e ".[dev]" build
+      - run: python scripts/build_sql.py --check && pytest -q
+      - run: python -m build
+      - name: Bundle install scripts
+        run: |
+          mkdir -p dist/sql
+          for d in sql/*/; do n=$(basename "$d"); (cd "$d" && zip -qr "../../dist/sql/sqljev-$n.zip" .); done
+      - name: Release notes from CHANGELOG
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## "v" " {f=1; next} /^## / && f {exit} f' CHANGELOG.md > notes.md
+          cat >> notes.md <<'NOTES'
+
+          **Install:** `pip install sqljev[laya,db]` — database install scripts are attached below.
+          NOTES
+      - name: GitHub Release
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.whl dist/*.tar.gz dist/sql/*.zip --title "sqljev ${GITHUB_REF_NAME#v}" --notes-file notes.md
+      - name: Publish to PyPI (enable with repository variable PYPI_PUBLISH=true + a PyPI trusted publisher)
+        if: vars.PYPI_PUBLISH == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1

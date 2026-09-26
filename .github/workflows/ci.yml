@@ -30,3 +30,25 @@ jobs:
       - run: pip install -e ".[dev]" pymssql
       - run: python tests/sqlserver_smoke.py
         env: {SQLJEV_TEST_MSSQL: "mssql+pymssql://sa:SqlJev!Ci2026@127.0.0.1:1433/master"}
+  postgres-mysql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_PASSWORD: ci}
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 20
+      mysql:
+        image: mysql:8
+        env: {MYSQL_ROOT_PASSWORD: ci, MYSQL_DATABASE: demo}
+        ports: ["3306:3306"]
+        options: --health-cmd "mysqladmin ping -pci" --health-interval 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e ".[dev]" "psycopg[binary]" pymysql
+      - run: python tests/answers_smoke.py
+        env: {SQLJEV_TEST_URL: "postgresql+psycopg://postgres:ci@127.0.0.1:5432/postgres"}
+      - run: python tests/answers_smoke.py
+        env: {SQLJEV_TEST_URL: "mysql+pymysql://root:ci@127.0.0.1:3306/demo"}

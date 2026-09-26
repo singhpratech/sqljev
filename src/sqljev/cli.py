@@ -250,46 +250,28 @@ def cmd_dataset(a):
 
 
 def cmd_eval(a):
-    """Accuracy of the configured backend on a laya-evals JSONL file (from `sqljev dataset`)."""
-    jev = Jev(**_settings(a))
-    groups = {}
-    for line in open(a.file):
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        rec = json.loads(line)
-        for qid, qd in rec["questions"].items():
-            crit = qd.get("criteria")
-            opts = list(crit) if crit else None
-            groups.setdefault((qd["type"], qd["instructions"], json.dumps(opts)), []).append(
-                (rec["state"], rec["expected"][qid]))
-    t0 = time.time()
-    total = correct = 0
-    for (kind, instr, opts_json), items in groups.items():
-        opts = json.loads(opts_json)
-        answers = jev.evaluate([s for s, _ in items], _unphrase(kind, instr), kind, opts)
-        for (_, exp), ans in zip(items, answers):
-            if kind == "noul":
-                ok = (ans["noul"] >= 0.5) == bool(exp)
-            elif kind == "choice":
-                ok = ans["choice"] == exp
-            else:
-                ok = round(ans["score"]) == int(exp)
-            correct += ok
-            total += 1
-    acc = correct / total if total else 0.0
-    print(json.dumps({"backend": jev.cfg["backend"], "model": jev.cfg["model"], "decisions": total,
-                      "accuracy": round(acc, 4), "seconds": round(time.time() - t0, 2)}))
-    if a.min_accuracy is not None and acc < a.min_accuracy:
+    """Accuracy of the configured backend / checkpoint on a dataset file (from `sqljev dataset`)."""
+    from .finetune import accuracy
+    s = _settings(a)
+    res = accuracy(a.file, **s)
+    print(json.dumps({"backend": s.get("backend", "local"), "model": s.get("model"), **res}))
+    if a.min_accuracy is not None and res["accuracy"] < a.min_accuracy:
         sys.exit(1)
 
 
-def _unphrase(kind, instructions):
-    """Recover the user's condition from laya_question()'s wording, so eval asks the same question."""
-    prefix = "Is it true that "
-    if kind == "noul" and instructions.startswith(prefix) and instructions.endswith("?"):
-        return instructions[len(prefix):-1]
-    return instructions
+def cmd_finetune(a):
+    from .finetune import finetune
+    finetune(a.train, a.out, base=a.base, epochs=a.epochs, micro_batch=a.micro_batch, grad_accum=a.grad_accum,
+             train_layers=a.train_layers, device=a.device, seed=a.seed, log=lambda m: print(m, file=sys.stderr, flush=True))
+    print("sqljev: use it with --model %s (or SQLJEV_MODEL=%s)" % (a.out, a.out), file=sys.stderr)
+
+
+def cmd_publish(a):
+    import os
+    from .finetune import publish
+    metrics = json.loads(a.metrics) if a.metrics else None
+    url = publish(a.dir, a.repo, token=os.environ.get("HF_TOKEN"), private=not a.public, metrics=metrics)
+    print("sqljev: published %s\nsqljev: every database can now use SQLJEV_MODEL=%s" % (url, a.repo), file=sys.stderr)
 
 
 def cmd_gateway(a):
@@ -297,35 +279,101 @@ def cmd_gateway(a):
     serve(a.host, a.port, Jev(**_settings(a)), certfile=a.certfile, keyfile=a.keyfile)
 
 
-def cmd_judge_sqlserver(a):
-    """Fill jev.answers (sql/sqlserver/install.sql) from outside the server, for SQL Server 2016-2022 or
-    servers without outbound HTTPS. Row JSON and hashes are computed by SQL Server itself (FOR JSON,
-    jev.row_hash), so jev.prob() finds exactly these answers."""
-    import sqlalchemy as sa
+def _quote(dialect, ident):
+    q = {"mssql": ("[", "]"), "mysql": ("`", "`"), "mariadb": ("`", "`")}.get(dialect, ('"', '"'))
+    return q[0] + ident.replace(q[1], q[1] * 2) + q[1]
+
+
+def _lit(s):
+    return "'" + s.replace("'", "''") + "'"
+
+
+class _Dialect:
+    """What `sqljev judge` needs from each database: resolve the source, a row -> JSON expression computed by
+    the database itself, and the jev.answers / jev_answers statements of sql/<db>/install.sql."""
+
+    def __init__(self, conn, source, columns):
+        import sqlalchemy as sa
+        self.sa, self.conn, self.name = sa, conn, conn.dialect.name
+        cols = [c.strip() for c in columns.split(",")] if columns else None
+        if self.name == "mssql":
+            self.table = conn.execute(sa.text(
+                "SELECT QUOTENAME(OBJECT_SCHEMA_NAME(OBJECT_ID(:s))) + N'.' + QUOTENAME(OBJECT_NAME(OBJECT_ID(:s)))"),
+                {"s": source}).scalar()
+            inner = ", ".join("t." + _quote(self.name, c) for c in cols) if cols else "t.*"
+            self.row = "(SELECT %s FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)" % inner
+            self.hash, self.answers, self.qkey = "jev.row_hash(%s)", "jev.answers", "SELECT jev.question_key(:q, :k, :o)"
+        elif self.name == "postgresql":
+            self.table = conn.execute(sa.text("SELECT to_regclass(:s)::text"), {"s": source}).scalar()
+            self.row = ("jsonb_build_object(%s)" % ", ".join("%s, t.%s" % (_lit(c), _quote(self.name, c)) for c in cols)
+                        if cols else "to_jsonb(t)")
+            self.hash, self.answers = "jev.row_hash(%s)", "jev.answers"
+            self.qkey = "SELECT jev.question_key(:q, :k, CAST(:o AS text[]))"
+        elif self.name in ("mysql", "mariadb"):
+            schema, _, tbl = source.rpartition(".")
+            found = conn.execute(sa.text(
+                "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = COALESCE(:sc, DATABASE()) "
+                "AND TABLE_NAME = :t ORDER BY ORDINAL_POSITION"), {"sc": schema or None, "t": tbl}).scalars().all()
+            self.table = ".".join(_quote(self.name, x) for x in ([schema] if schema else []) + [tbl]) if found else None
+            use = [c for c in found if c in cols] if cols else found
+            self.row = "JSON_OBJECT(%s)" % ", ".join("%s, t.%s" % (_lit(c), _quote(self.name, c)) for c in use)
+            self.hash, self.answers, self.qkey = "jev_row_hash(%s)", "jev_answers", "SELECT jev_question_key(:q, :k, :o)"
+        else:
+            raise JevError("sqljev: judge supports SQL Server, PostgreSQL, MySQL and MariaDB (got %s); for other "
+                           "databases use `sqljev materialize`" % self.name)
+        if not self.table:
+            raise JevError("sqljev: %r is not a table or view" % source)
+
+    def question_key(self, text, kind, opts):
+        o = opts if self.name == "postgresql" else (json.dumps(opts) if opts else None)
+        return self.conn.execute(self.sa.text(self.qkey), {"q": text, "k": kind, "o": o}).scalar()
+
+    def pending(self, qkey, where):
+        """(row_hash, row_json) for rows with no answer yet, de-duplicated by content."""
+        sql = ("SELECT %s AS h, x.j AS j FROM (SELECT %s AS j FROM %s AS t%s) AS x WHERE NOT EXISTS "
+               "(SELECT 1 FROM %s AS a WHERE a.question_key = :qk AND a.row_hash = %s)"
+               % (self.hash % "x.j", self.row, self.table, " WHERE " + where if where else "", self.answers,
+                  self.hash % "x.j"))
+        todo = {}
+        for h, j in self.conn.execute(self.sa.text(sql), {"qk": qkey}):
+            todo.setdefault(bytes(h), j if isinstance(j, str) else json.dumps(j))
+        return todo
+
+    def store(self, qkey, pairs):
+        sql = {"mssql": "INSERT jev.answers (question_key, row_hash, answer) VALUES (:qk, :h, :a)",
+               "postgresql": "INSERT INTO jev.answers (question_key, row_hash, answer) VALUES (:qk, :h, CAST(:a AS jsonb))"
+                             " ON CONFLICT DO NOTHING"}.get(
+            self.name, "INSERT IGNORE INTO jev_answers (question_key, row_hash, answer) VALUES (:qk, :h, :a)")
+        rows = [{"qk": qkey, "h": h, "a": json.dumps(a)} for h, a in pairs]
+        for i in range(0, len(rows), 500):
+            self.conn.execute(self.sa.text(sql), rows[i:i + 500])
+
+    def usage(self, mode, text, opts):
+        fn = ("jev." if self.name in ("mssql", "postgresql") else "jev_") + \
+            {"choice": "choice", "score": "score"}.get(mode, "prob")
+        n = "N" if self.name == "mssql" else ""
+        args = [self.row, n + _lit(text)]
+        if opts:
+            args.append("ARRAY[%s]" % ", ".join(_lit(o) for o in opts) if self.name == "postgresql"
+                        else n + _lit(json.dumps(opts)))
+        return "%s(%s)" % (fn, ", ".join(args))
+
+
+def cmd_judge(a):
+    """Judge every row of a table that has no answer yet and store the answers in the database, where the
+    lookup functions of sql/<db>/install.sql read them. The database computes each row's JSON and hash itself,
+    so its functions find exactly these answers, and a row edited later is judged again on the next run."""
     mode, text, kind, opts = _question(a)
-    opts_json = json.dumps(opts) if opts else None
     jev = Jev(**_settings(a))
     t0 = time.time()
     with _engine(a.url).begin() as conn:
-        name = conn.execute(sa.text("SELECT QUOTENAME(OBJECT_SCHEMA_NAME(OBJECT_ID(:s))) + N'.' + "
-                                    "QUOTENAME(OBJECT_NAME(OBJECT_ID(:s)))"), {"s": a.source}).scalar()
-        if not name:
-            raise JevError("sqljev: %r is not a table or view" % a.source)
-        qkey = conn.execute(sa.text("SELECT jev.question_key(:q, :k, :o)"),
-                            {"q": text, "k": kind, "o": opts_json}).scalar()
-        sql = ("SELECT jev.row_hash(x.j) AS h, x.j FROM (SELECT (SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)"
-               " AS j FROM %s AS t%s) AS x WHERE NOT EXISTS (SELECT 1 FROM jev.answers AS a"
-               " WHERE a.question_key = :qk AND a.row_hash = jev.row_hash(x.j))"
-               % (name, " WHERE " + a.filter if a.filter else ""))
-        todo = {}
-        for h, j in conn.execute(sa.text(sql), {"qk": qkey}):
-            todo.setdefault(bytes(h), j)
+        d = _Dialect(conn, a.source, a.columns)
+        qkey = d.question_key(text, kind, opts)
+        todo = d.pending(qkey, a.filter)
         answers = jev.evaluate(list(todo.values()), text, kind, opts)
-        rows = [{"qk": qkey, "h": h, "a": json.dumps(ans)} for h, ans in zip(todo, answers)]
-        for i in range(0, len(rows), 500):
-            conn.execute(sa.text("INSERT jev.answers (question_key, row_hash, answer) VALUES (:qk, :h, :a)"),
-                         rows[i:i + 500])
-    print("sqljev: judged %d new rows of %s" % (len(rows), name), file=sys.stderr)
+        d.store(qkey, zip(todo, answers))
+    print("sqljev: judged %d new rows of %s" % (len(todo), d.table), file=sys.stderr)
+    print("sqljev: read them with %s" % d.usage(mode, text, opts), file=sys.stderr)
     _report(jev, t0, a)
 
 
@@ -412,6 +460,26 @@ def main(argv=None):
     _common(e)
     e.set_defaults(fn=cmd_eval)
 
+    f = sub.add_parser("finetune", help="fine-tune Laya on a `sqljev dataset` file (one GPU)")
+    f.add_argument("train", help="training JSONL from `sqljev dataset`")
+    f.add_argument("--out", required=True, help="output checkpoint directory")
+    f.add_argument("--base", default="convaiinnovations/laya",
+                   help="english (default), multilingual, typed-decisions, a Hub id or a local checkpoint")
+    f.add_argument("--epochs", type=int, default=3)
+    f.add_argument("--micro-batch", type=int, default=8)
+    f.add_argument("--grad-accum", type=int, default=8)
+    f.add_argument("--train-layers", type=int, help="low-memory mode: train only the top N encoder layers + head")
+    f.add_argument("--device")
+    f.add_argument("--seed", type=int, default=0)
+    f.set_defaults(fn=cmd_finetune)
+
+    pb = sub.add_parser("publish", help="upload a fine-tuned checkpoint to the Hugging Face Hub (HF_TOKEN)")
+    pb.add_argument("dir")
+    pb.add_argument("--repo", required=True, help="e.g. your-org/laya-tickets")
+    pb.add_argument("--public", action="store_true", help="default: private")
+    pb.add_argument("--metrics", help='JSON, e.g. \'{"base": 0.41, "finetuned": 0.93}\'')
+    pb.set_defaults(fn=cmd_publish)
+
     g = sub.add_parser("gateway", help="serve the HTTP gateway for SQL Server, Snowflake, BigQuery, Redshift")
     g.add_argument("--host", default="127.0.0.1")
     g.add_argument("--port", type=int, default=8765)
@@ -420,10 +488,11 @@ def main(argv=None):
     _common(g)
     g.set_defaults(fn=cmd_gateway)
 
-    s = sub.add_parser("judge-sqlserver", help="fill jev.answers on SQL Server from outside (2016-2022)")
-    s.add_argument("url", help="mssql+pyodbc://... or mssql+pymssql://...")
-    s.add_argument("--source", required=True, help="table or view, e.g. dbo.tickets")
-    s.add_argument("--where", dest="filter", help="T-SQL filter applied before judging")
+    s = sub.add_parser("judge", help="judge a table into jev answers (SQL Server, PostgreSQL, MySQL, MariaDB)")
+    s.add_argument("url", help="mssql+pymssql://..., postgresql://..., mysql+pymysql://..., mariadb+pymysql://...")
+    s.add_argument("--source", required=True, help="table or view, e.g. dbo.tickets / public.tickets / tickets")
+    s.add_argument("--where", dest="filter", help="filter in the database's SQL, applied before judging")
+    s.add_argument("--columns", help="comma list of columns the model sees (default: all)")
     g2 = s.add_argument_group("question (exactly one)")
     g2.add_argument("--prob", metavar="CONDITION")
     g2.add_argument("--choice", metavar="QUESTION")
@@ -431,7 +500,7 @@ def main(argv=None):
     g2.add_argument("--options", type=core.parse_options)
     g2.add_argument("--levels", type=core.parse_options)
     _common(s)
-    s.set_defaults(fn=cmd_judge_sqlserver)
+    s.set_defaults(fn=cmd_judge)
 
     a = p.parse_args(argv)
     try:

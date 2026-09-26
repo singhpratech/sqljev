@@ -4,8 +4,8 @@
 
 # sqljev — ask your SQL rows questions in plain language, answered by Laya
 
-Write the condition the way you would say it. Your database does the rest, on **SQL Server, Snowflake,
-Databricks, BigQuery, Redshift, DuckDB** and anything SQLAlchemy can reach.
+Write the condition the way you would say it. Your database does the rest, on **SQL Server, PostgreSQL,
+MySQL / MariaDB, Snowflake, Databricks, BigQuery, Redshift, DuckDB** and anything SQLAlchemy can reach.
 
 ```sql
 -- Snowflake / Databricks / DuckDB / BigQuery / Redshift: the row goes in as JSON
@@ -82,6 +82,35 @@ A SQL question is *one question over many rows*, and everything is organised aro
 | `laya-serve` | stock `laya-serve` (`POST /v1/systemone`) | 1 (Laya reads one state) | an existing Laya deployment |
 | `jev` | TypeSafe Jev, hosted | 20 in one shared state (pg-jev's measured optimum) | best zero-shot accuracy, if data may leave your network |
 
+## Benchmark: 100,000 rows, 13 questions
+
+Ten synthetic but realistic tables with exact labels (`python -m sqljev.demo`), one plain SQL query per question
+through DuckDB, answered by the **base Laya English checkpoint with no training**, on an RTX 4090 Laptop GPU
+that another model was sharing:
+
+| Question | Rows | Accuracy | Always-majority baseline | Rows/s |
+| --- | --- | --- | --- | --- |
+| Contract clause: which type? (5) | 10000 | **0.995** | 0.203 | 1606 |
+| Job post: fully remote? | 10000 | **0.922** | 0.602 | 375 |
+| Support ticket: is the customer angry? | 10000 | **0.894** | 0.697 | 567 |
+| Advisor email: guarantees returns? | 10000 | **0.865** | 0.747 | 514 |
+| Support ticket: which team? | 10000 | **0.854** | 0.352 | 580 |
+| Job post: how senior? (3 levels) | 10000 | **0.853** | 0.336 | 402 |
+| Expense: which category? (5) | 10000 | **0.851** | 0.209 | 607 |
+| Product review: reports a defect? | 10000 | **0.850** | 0.702 | 855 |
+| Product review: sentiment (3 levels) | 10000 | **0.828** | 0.453 | 879 |
+| Adverse event: was it serious? | 10000 | **0.699** | 0.650 | 345 |
+| Two company records: same company? (join) | 20000 | **0.685** | 0.506 | 531 |
+| Adverse event: which body system? (5) | 10000 | **0.680** | 0.203 | 371 |
+| Rental listing: pets allowed? | 10000 | **0.595** | 0.546 | 384 |
+
+**140,000 decisions in 271 s (516/s). Re-running all 13 queries: 0.9 s**, every answer from the cache. With an
+instant stand-in model, sqljev's own overhead measured about 98,000 decisions/s: the model is the only cost.
+Reproduce with `python -m sqljev.demo --out bench/bench.duckdb && python bench/run.py --device cuda`.
+
+The weak rows are where fine-tuning pays: the model has to learn *your* definition (what counts as "serious"
+in pharmacovigilance, what a pet policy sentence means). See below.
+
 ## Which model? Laya vs Jev, honestly
 
 | | Laya (default) | Jev |
@@ -111,12 +140,24 @@ sqljev dataset "$DB_URL" "SELECT subject, body, team FROM tickets WHERE team IS 
 sqljev eval tickets.test.jsonl                         # Laya base
 sqljev eval tickets.test.jsonl --backend jev           # Jev, for comparison
 
-# 3. Fine-tune with Laya's notebook (Kaggle, free 2x T4, ~hours):
-#    https://github.com/NandhaKishorM/laya/blob/main/notebooks/laya_finetune_typed_decisions_2xT4_kaggle.ipynb
-# 4. Measure again, then serve it everywhere:
-sqljev eval tickets.test.jsonl --model ./checkpoints/tickets-laya --min-accuracy 0.85
-SQLJEV_MODEL=./checkpoints/tickets-laya sqljev gateway --host 0.0.0.0
+# 3. Fine-tune (one GPU; a free Colab T4 is enough. --train-layers 12 for GPUs with less than ~10 GB free)
+sqljev finetune tickets.train.jsonl --out checkpoints/tickets --epochs 3
+
+# 4. Measure again on the same held-out rows, then share it with the team
+sqljev eval tickets.test.jsonl --model checkpoints/tickets --min-accuracy 0.85
+HF_TOKEN=... sqljev publish checkpoints/tickets --repo your-org/laya-tickets
+SQLJEV_MODEL=your-org/laya-tickets sqljev gateway --host 0.0.0.0      # every database now uses it
 ```
+
+Measured on the built-in pharma demo (*"the adverse event was serious"*, 3,000 training rows, 1,000 held out):
+**69.4% → 100% after 2 minutes** of training on an RTX 4090 Laptop GPU (`--train-layers 12`, 3 epochs). The demo
+reports come from templates and are easy to learn; expect a smaller jump on real data, and measure it the same way.
+
+**No terminal?** Open [`notebooks/sqljev_finetune_colab.ipynb`](notebooks/sqljev_finetune_colab.ipynb) in
+[Colab](https://colab.research.google.com/github/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb),
+pick a question (or the built-in pharma demo) and press *Run all*: it measures, fine-tunes, measures again and
+publishes. The training loop follows Laya's own fine-tuning notebook (proper-scoring-rule policy gradient plus
+cross-entropy, temperature calibration on held-out rows), adapted to a single GPU.
 
 `laya-evals run tickets.test.jsonl` works on the same files for calibration (ECE) and per-slice reports.
 
@@ -132,7 +173,7 @@ from Hugging Face.
 
 ## Per database
 
-<details open><summary><b>Any database: the CLI</b> (Postgres, MySQL, Oracle, SQL Server, Snowflake, ...)</summary>
+<details open><summary><b>Any database: the CLI</b> (Oracle, Db2, Trino, and everything above)</summary>
 
 ```bash
 sqljev query "$DB_URL" "SELECT * FROM tickets" --where "the customer is angry" --limit 20
@@ -156,11 +197,43 @@ Run [`sql/sqlserver/install.sql`](sql/sqlserver/install.sql). It creates schema 
 - **SQL Server 2016–2022**, or no outbound HTTPS: fill the same answer table from outside, and every function
   works the same:
   ```bash
-  sqljev judge-sqlserver "mssql+pymssql://user:pw@host/db" --source dbo.tickets --prob "the customer is angry"
+  sqljev judge "mssql+pymssql://user:pw@host/db" --source dbo.tickets --prob "the customer is angry"
   ```
 
 Row JSON (`FOR JSON`) and hashes are computed by SQL Server itself, so a row edited later is judged again
 on the next `jev.judge` run, and unchanged rows are skipped.
+</details>
+
+<details><summary><b>PostgreSQL</b> (RDS, Aurora, Cloud SQL, AlloyDB, Azure, Supabase, Neon, ...)</summary>
+
+Run [`sql/postgres/install.sql`](sql/postgres/install.sql): no extension, no superuser. Judge once, then read
+with ordinary functions:
+
+```bash
+sqljev judge "postgresql://..." --source public.tickets --prob "the customer is angry"
+```
+```sql
+SELECT * FROM tickets t WHERE jev.prob(to_jsonb(t), 'the customer is angry') >= 0.5;
+SELECT jev.choice(to_jsonb(t), 'which team?', ARRAY['billing', 'technical', 'sales']) FROM tickets t;
+```
+
+Rows are keyed by their `jsonb` content, so edited rows are judged again on the next run. Self-hosted Postgres
+with `plpython3u` can also run [pg-jev](https://github.com/realZachi/pg-jev) on Laya:
+`SET jev.api_url = 'http://<sqljev gateway>:8765/v1/systemone'`.
+</details>
+
+<details><summary><b>MySQL / MariaDB</b> (RDS, Aurora, Cloud SQL, Azure)</summary>
+
+Run [`sql/mysql/install.sql`](sql/mysql/install.sql) (stored functions and a `jev_answers` table), then:
+
+```bash
+sqljev judge "mysql+pymysql://..." --source tickets --prob "the customer is angry"
+# prints the exact row expression to use, e.g. JSON_OBJECT('id', t.id, 'subject', t.subject, 'body', t.body)
+```
+```sql
+SELECT * FROM tickets t
+WHERE jev_prob(JSON_OBJECT('id', t.id, 'subject', t.subject, 'body', t.body), 'the customer is angry') >= 0.5;
+```
 </details>
 
 <details><summary><b>Snowflake</b></summary>
@@ -227,6 +300,7 @@ docker build -f deploy/Dockerfile -t sqljev .        # checkpoint baked in; CUDA
 | `POST /snowflake/<fn>` | Snowflake service / external functions |
 | `POST /bigquery` | BigQuery remote functions |
 | `POST /redshift` | Redshift Lambda payloads |
+| `POST /v1/systemone` | Jev clients such as pg-jev (Jev's own API, answered by Laya) |
 | `GET /health`, `GET /stats` | probes, cache/throughput stats |
 
 ## Functions
@@ -266,6 +340,9 @@ Environment variables `SQLJEV_<NAME>`, keyword arguments (`Jev(backend="gateway"
 
 ## Caveats
 
+- **Limit before you judge.** Databases compute the `SELECT` list before `ORDER BY ... LIMIT`, so
+  `SELECT jev_prob(...) FROM t ORDER BY id LIMIT 100` judges *every* row. Limit in a subquery first:
+  `SELECT jev_prob(...) FROM (SELECT * FROM t ORDER BY id LIMIT 100) t`. In `WHERE`, put cheap predicates first.
 - **Every row that reaches `jev()` is judged** (once, thanks to the cache). No index can answer a
   plain-language condition. Filter with cheap SQL first; `LIMIT` and streaming stop early.
 - **Laya reads 512 tokens** (English) or 1,024 (multilingual, up to 8,192 with `max_len`). Wide rows are cut
@@ -282,6 +359,10 @@ uv venv && uv pip install -e ".[dev]"
 pytest                               # never calls a real model: tests/mock_api.py + a fake laya module
 python scripts/build_sql.py          # regenerate sql/snowflake/install_udf.sql after editing core.py
 ```
+
+Releasing is one command, `scripts/release.sh 0.1.0`: it dates the CHANGELOG entry, runs the tests, tags and
+pushes. GitHub Actions then builds the package, creates the GitHub Release with the wheel and every database's
+install scripts attached, and publishes to PyPI once `PYPI_PUBLISH` is enabled.
 
 See [AGENTS.md](AGENTS.md) for the architecture.
 

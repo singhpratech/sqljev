@@ -98,6 +98,7 @@ nav.top .links a:hover { color: var(--ink); }
 .hero .wrap > * { min-width: 0; }
 h1 { font-size: clamp(42px, 6.4vw, 78px); line-height: .98; letter-spacing: -.035em; font-weight: 800; margin: 0 0 22px;
   font-variation-settings: "opsz" 96; }
+.hero .ver { font-size: 15px; font-weight: 600; color: var(--amber-deep); margin: 0 0 14px; }
 .hero .lede { font-size: 20px; color: var(--ink-2); max-width: 34em; margin: 0 0 28px; }
 .hero .lede strong { color: var(--ink); font-weight: 650; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
@@ -149,18 +150,27 @@ section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 
 .peek { position: absolute; width: 70px; right: 6%; top: -38px; }
 
 /* databases */
-.dbs { display: grid; gap: 24px; }
-@media (min-width: 900px) { .dbs { grid-template-columns: 260px 1fr; } }
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-content: start; }
-@media (min-width: 900px) { .tabs { flex-direction: column; } }
-.tab { font: inherit; font-size: 17px; font-weight: 600; text-align: left; padding: 11px 16px; border-radius: 10px; cursor: pointer;
-  border: 2px solid var(--line); background: var(--surface); color: var(--ink); transition: border-color .2s, transform .2s; }
-.tab:hover { transform: translateX(3px); }
-.tab[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-.tab small { display: block; font-weight: 400; font-size: 13px; opacity: .75; }
-.dbcode { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); padding: 22px; min-height: 290px; }
-.dbcode pre { margin: 0; font-size: 14px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
-.dbcode .how { color: var(--code-dim); font-size: 14px; margin: 0 0 14px; font-family: "Bricolage Grotesque", sans-serif; }
+.dbs { display: grid; gap: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: -2px; position: relative; z-index: 1; }
+@media (max-width: 700px) { .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; } }
+.tab { font: inherit; font-size: 16px; font-weight: 600; white-space: nowrap; padding: 12px 16px 11px; cursor: pointer; background: none; color: var(--ink-2);
+  border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; transition: color .2s, background .2s, border-color .2s; }
+.tab:hover { color: var(--ink); background: color-mix(in srgb, var(--line) 45%, transparent); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.tab small { display: none; }
+.dbhead { font-size: 14px; font-weight: 650; color: var(--code-str); margin: 0 0 4px; }
+.dbcode { background: var(--code-bg); color: var(--code-ink); border-radius: 0 0 var(--radius-l) var(--radius-l); padding: 24px; min-height: 320px; }
+.dbcode .how { color: var(--code-dim); font-size: 15px; margin: 0 0 18px; }
+.step { margin: 0 0 16px; opacity: 0; transform: translateY(6px); animation: stepin .35s ease forwards; }
+@keyframes stepin { to { opacity: 1; transform: none; } }
+.step-head { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 15px; font-weight: 650; color: var(--code-ink); }
+.step-head .n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--amber); color: #152238; font-size: 13px; font-weight: 800; flex: none; }
+.snippet { position: relative; background: color-mix(in srgb, var(--code-ink) 6%, transparent); border: 1px solid color-mix(in srgb, var(--code-ink) 12%, transparent); border-radius: 10px; }
+.snippet pre { margin: 0; padding: 14px 84px 14px 16px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+.snippet .copy { position: absolute; top: 8px; right: 8px; font: 600 13px "Bricolage Grotesque", sans-serif; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--code-ink) 25%, transparent); background: var(--code-bg); color: var(--code-ink); transition: background .2s, color .2s; }
+.snippet .copy:hover { background: var(--amber); color: #152238; border-color: var(--amber); }
+.snippet .copy.done { background: var(--moss); color: #fff; border-color: var(--moss); }
 
 /* pipeline */
 .pipe { position: relative; height: 300px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-l); overflow: hidden; }
@@ -191,6 +201,23 @@ section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 
   background: var(--ink); color: var(--paper); font-weight: 750; margin-bottom: 10px; }
 .steps b { display: block; color: var(--ink); font-size: 18px; margin-bottom: 4px; }
 @media (max-width: 700px) { .pipe .out { width: 44px; } .pipe { height: 260px; } .pipe .gate span { font-size: 12px; } .pipe .owlbox { width: 80px; left: 70%; } .pipe .ans { width: 44px; } }
+
+
+/* benchmark */
+.bstats { display: flex; flex-wrap: wrap; gap: 14px 40px; margin: 0 0 34px; }
+.bstat b { display: block; font-size: clamp(34px, 4.4vw, 50px); font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.bstat span { font-size: 15px; color: var(--ink-2); }
+.bars { display: grid; gap: 10px; }
+.brow { display: grid; grid-template-columns: minmax(0, 330px) 1fr 58px; gap: 14px; align-items: center; font-size: 15.5px; }
+.btrack { position: relative; height: 20px; border-radius: 10px; background: color-mix(in srgb, var(--line) 55%, transparent); }
+.bfill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 10px; background: var(--amber); transition: width 1s cubic-bezier(.2, .8, .2, 1); }
+.bfill.weak { background: var(--plum); }
+.bbase { position: absolute; top: -4px; bottom: -4px; width: 3px; border-radius: 2px; background: var(--ink); opacity: 0; transition: opacity .4s 1s; }
+.bars.on .bbase { opacity: .75; }
+.bval { font-family: "JetBrains Mono", monospace; font-size: 14px; text-align: right; }
+.blegend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 14px; color: var(--ink-2); margin: 16px 0 0; }
+.blegend i { display: inline-block; width: 22px; height: 10px; border-radius: 5px; vertical-align: middle; margin-right: 6px; }
+@media (max-width: 700px) { .brow { grid-template-columns: 1fr 52px; } .brow .btrack { grid-column: 1 / -1; grid-row: 2; } }
 
 /* functions grid */
 .fgrid { background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius-l); overflow-x: auto; }
@@ -243,7 +270,10 @@ section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 
 .ring .center { position: absolute; left: 50%; top: 50%; width: 36%; transform: translate(-50%, -46%); text-align: center; }
 .ring .acc { font-size: 15px; color: var(--ink-2); margin-top: 4px; }
 .ring .acc b { font-size: 26px; color: var(--ink); font-family: "JetBrains Mono", monospace; display: block; }
-.code-card { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); padding: 22px; }
+.ftlead { font-size: 19px; margin: 0 0 18px; }
+.ftresult { font-size: 17px; color: var(--ink-2); margin: 0 0 16px; padding: 14px 16px; border-left: 4px solid var(--amber); background: var(--surface); border-radius: 0 10px 10px 0; }
+.ftresult b { color: var(--ink); font-size: 22px; display: block; }
+.code-card { margin-top: 22px; background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); padding: 22px; }
 .code-card pre { margin: 0; font-size: 13.5px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 600px) {
   .ring { width: 100%; aspect-ratio: auto; margin: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -280,6 +310,7 @@ footer p { margin: 0 0 8px; max-width: 60em; }
     <div class="links">
       <a class="opt" href="#databases">Databases</a>
       <a class="opt" href="#how">How it works</a>
+      <a class="opt" href="#benchmark">Benchmark</a>
       <a class="opt" href="#finetune">Fine-tune</a>
       <a href="https://github.com/singhpratech/sqljev">GitHub</a>
     </div>
@@ -289,8 +320,9 @@ footer p { margin: 0 0 8px; max-width: 60em; }
 <header class="hero" id="top">
   <div class="wrap">
     <div>
+      <p class="ver">v0.1.0, open source, Apache 2.0</p>
       <h1>Ask your tables questions in plain English.</h1>
-      <p class="lede">sqljev adds <strong>jev()</strong> to SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB.
+      <p class="lede">sqljev adds <strong>jev()</strong> to SQL Server, PostgreSQL, MySQL, Snowflake, Databricks, BigQuery, Redshift and DuckDB.
         Every row is judged by <strong>Laya</strong>, an open-weights decision model that runs on your own hardware and
         learns from your own tables.</p>
       <div class="cta">
@@ -314,11 +346,11 @@ footer p { margin: 0 0 8px; max-width: 60em; }
   <div class="peek owl-slot" data-owl="peek"></div>
   <div class="wrap">
     <h2>Same functions, every database.</h2>
-    <p class="intro">Each database already hands its functions rows in batches. sqljev takes each batch as it comes,
+    <p class="intro">Pick your database for a three-step setup you can copy. Each database already hands its functions rows in batches. sqljev takes each batch as it comes,
       so a thousand rows become a handful of forward passes, not a thousand calls.</p>
     <div class="dbs">
       <div class="tabs" role="tablist" aria-label="Database" id="tabs"></div>
-      <div class="dbcode" role="tabpanel" id="dbpanel"><p class="how" id="dbhow"></p><pre id="dbsql"></pre></div>
+      <div class="dbcode" role="tabpanel" id="dbpanel"><p class="dbhead" id="dbsub"></p><p class="how" id="dbhow"></p><div id="dbsteps"></div></div>
     </div>
   </div>
 </section>
@@ -345,6 +377,27 @@ footer p { margin: 0 0 8px; max-width: 60em; }
       <li><b>Batch</b>The rest are packed into shared forward passes, sorted by length to waste less padding.</li>
       <li><b>Answer</b>Calibrated probabilities flow back into your query: filter, sort, group.</li>
     </ol>
+  </div>
+</section>
+
+
+<section id="benchmark">
+  <div class="wrap">
+    <h2>100,000 rows. 13 questions. One laptop GPU.</h2>
+    <p class="intro">Ten realistic tables (support tickets, product reviews, adverse-event reports, expenses, job posts,
+      rentals, contract clauses, advisor emails and company records to match) with exact labels. Every question is a
+      plain SQL query through DuckDB, answered by the base Laya checkpoint with no training at all.</p>
+    <div class="bstats">
+      <div class="bstat"><b>516</b><span>decisions per second</span></div>
+      <div class="bstat"><b>4.5 min</b><span>for all 140,000 decisions</span></div>
+      <div class="bstat"><b>0.9 s</b><span>to run all 13 queries again</span></div>
+    </div>
+    <div class="bars" id="bars" role="list" aria-label="Accuracy per question"></div>
+    <div class="blegend"><span><i style="background:var(--amber)"></i>accuracy, base model</span>
+      <span><i style="background:var(--plum)"></i>below 0.75: fine-tune it</span>
+      <span><i style="background:var(--ink);width:3px;height:14px;border-radius:2px"></i>always guessing the most common answer</span></div>
+    <p class="caption">Synthetic data generated by <code>python -m sqljev.demo</code>; reproduce with <code>python bench/run.py</code>.
+      Laya English checkpoint, zero-shot, RTX 4090 Laptop GPU shared with another model.</p>
   </div>
 </section>
 
@@ -413,23 +466,26 @@ footer p { margin: 0 0 8px; max-width: 60em; }
         <svg class="track" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/></svg>
         <div class="station" style="left:50%;top:8%">Labelled rows<small>any table with an answer column</small></div>
         <div class="station" style="left:92%;top:50%">sqljev dataset<small>train / test JSONL</small></div>
-        <div class="station" style="left:50%;top:92%">Fine-tune<small>Laya notebook, free T4s</small></div>
+        <div class="station" style="left:50%;top:92%">sqljev finetune<small>Colab, free T4 GPU</small></div>
         <div class="station" style="left:8%;top:50%">sqljev eval<small>accuracy on your rows</small></div>
         <div class="dot" id="dot"></div>
-        <div class="center"><div class="owl-slot" data-owl="grad"></div><div class="acc">accuracy<b id="acc">0.362</b></div></div>
+        <div class="center"><div class="owl-slot" data-owl="grad"></div><div class="acc">held-out accuracy<b id="acc">0.694</b></div></div>
       </div>
-      <div class="code-card"><pre><span class="tok-dim"># labelled rows in, training data out (the label is never shown to the model)</span>
-sqljev dataset "$DB_URL" <span class="tok-str">"SELECT subject, body, team FROM tickets"</span> \
-    --label team --choice <span class="tok-str">"which team should handle this?"</span> \
-    --test-fraction 0.2 -o tickets.jsonl
-
-<span class="tok-dim"># how does the base model do on YOUR rows? and Jev?</span>
-sqljev eval tickets.test.jsonl
-sqljev eval tickets.test.jsonl --backend jev
-
-<span class="tok-dim"># fine-tune with Laya's notebook, then measure and serve</span>
-sqljev eval tickets.test.jsonl --model ./checkpoints/tickets --min-accuracy 0.85
-SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
+      <div>
+        <p class="ftresult"><b>69.4% → 100%</b> on 1,000 held-out adverse-event reports (<i>was the event serious?</i>)
+          after 2 minutes of training on a laptop GPU. The demo reports are built from templates, so they are easy to
+          learn: expect a smaller jump on real data, and measure it with the same notebook.</p>
+        <p class="ftlead">Open the notebook, pick a question, press <b>Run all</b>. It measures the base model on held-out rows,
+          fine-tunes, measures again, and publishes the checkpoint for your team.</p>
+        <p><a class="btn primary" href="https://colab.research.google.com/github/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb">Open in Colab</a></p>
+        <div class="code-card"><pre><span class="tok-dim"># or from a terminal with a GPU</span>
+sqljev dataset "$DB_URL" <span class="tok-str">"SELECT drug, narrative, serious FROM adverse_events"</span> \
+    --label serious --noul <span class="tok-str">"the adverse event was serious"</span> --test-fraction 0.25 -o ae.jsonl
+sqljev eval ae.test.jsonl                                 <span class="tok-dim"># base model</span>
+sqljev finetune ae.train.jsonl --out checkpoints/ae
+sqljev eval ae.test.jsonl --model checkpoints/ae          <span class="tok-dim"># fine-tuned</span>
+sqljev publish checkpoints/ae --repo your-org/laya-ae     <span class="tok-dim"># the whole team uses it</span></pre></div>
+      </div>
     </div>
   </div>
 </section>
@@ -445,6 +501,8 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
       <div class="use"><h3>Compliance</h3><code>WHERE jev(e, <em>'the email promises a guaranteed return'</em>)</code></div>
       <div class="use"><h3>Routing</h3><code>jev_choice(t, <em>'which team should handle this?'</em>, ['billing','technical','security'])</code></div>
       <div class="use"><h3>Triage</h3><code>ORDER BY jev_score(i, <em>'how severe is this incident?'</em>, ['minor','major','critical']) DESC</code></div>
+      <div class="use"><h3>Entity resolution</h3><code>SELECT a.id, b.id FROM crm a JOIN billing b ON a.city = b.city AND jev(to_json({'a': a.name, 'b': b.name}), <em>'both are the same company'</em>)</code></div>
+      <div class="use"><h3>Expense audit</h3><code>GROUP BY jev_choice(x, <em>'what kind of business expense is this?'</em>, ['travel','meals','software','entertainment'])</code></div>
       <div class="use"><h3>Data quality</h3><code>WHERE NOT jev(a, <em>'this is a real postal address'</em>)</code></div>
     </div>
   </div>
@@ -540,6 +598,17 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
     }).join("");
   }
 
+  const isSql = c => /^\s*(SELECT|WITH|EXEC|CREATE)\b/i.test(c);
+  function hlShell(c) {
+    const esc = c.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    return esc.split("\n").map(line => {
+      if (/^\s*#/.test(line)) return `<span class="tok-dim">${line}</span>`;
+      return line.split(/("(?:[^"\\]|\\.)*"|'[^']*')/).map((part, i) => i % 2 ? `<span class="tok-str">${part}</span>`
+        : part.replace(/^(\s*)(%?pip|sqljev|psql|mysql|sqlcmd|docker|snowsql|gcloud|bq|aws|import|con\.sql|sqljev\.\w+\.register)/, '$1<span class="tok-kw">$2</span>')
+              .replace(/(\s)(--?[\w-]+)/g, '$1<span class="tok-fn">$2</span>')).join("");
+    }).join("\n");
+  }
+
   // ------------------------------------------------ hero: real Laya output (English checkpoint, CPU)
   const TICKETS = [
     [1, "Charged twice", "You billed me twice this month. Refund it now or I cancel!!", .873],
@@ -618,21 +687,45 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
   })();
 
   // ------------------------------------------------ database tabs
+  const R = "https://github.com/singhpratech/sqljev/blob/main/";
   const DBS = [
-    ["SQL Server", "2016 and later, Azure SQL", "jev.judge sends new rows to the gateway in batches of 500 (or run sqljev judge-sqlserver from outside); jev.prob reads the stored answer with an index seek.",
-      "EXEC jev.judge N'dbo.tickets', N'the customer is angry';\n\nSELECT * FROM dbo.tickets AS t\nWHERE jev.prob((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n               N'the customer is angry') >= 0.5;\n\nSELECT jev.choice((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n                  N'which team?', N'[\"billing\",\"technical\",\"sales\"]') AS team\nFROM dbo.tickets AS t;"],
-    ["Snowflake", "Laya inside Snowpark Container Services", "Service functions receive up to 1,000 rows per call; Laya runs on a GPU compute pool, so rows never leave your account.",
-      "SELECT * FROM tickets t\nWHERE jev(OBJECT_CONSTRUCT(t.*), 'the customer is angry');\n\nSELECT jev_choice(OBJECT_CONSTRUCT(t.*), 'which team should handle this?',\n                  ['billing', 'technical', 'sales']) AS team, COUNT(*)\nFROM tickets t GROUP BY team;"],
-    ["Databricks", "and any Spark", "pandas UDFs get Arrow batches of 10,000 rows; Laya runs on every executor, one model load per worker.",
-      "# in a notebook cell\nimport sqljev.spark\nsqljev.spark.register(spark, device='cuda')\n\nSELECT * FROM support.tickets\nWHERE jev(to_json(struct(subject, body)), 'the customer is angry');"],
-    ["BigQuery", "remote functions on Cloud Run", "BigQuery batches rows into each remote-function call (max_batching_rows); the gateway answers the whole batch at once.",
-      "SELECT * FROM `proj.support.tickets` t\nWHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');\n\nSELECT jev.jev_choice(TO_JSON_STRING(t), 'which team?',\n                      '[\"billing\",\"technical\",\"sales\"]') AS team\nFROM `proj.support.tickets` t;"],
-    ["Redshift", "Lambda UDFs", "Redshift sends row batches to a tiny stdlib-only Lambda that forwards them to your gateway.",
-      "SELECT * FROM tickets\nWHERE jev(JSON_SERIALIZE(OBJECT('subject', subject, 'body', body)),\n          'the customer is angry');"],
-    ["DuckDB", "and the sqljev CLI for anything else", "Arrow UDFs see 2,048 rows at a time. The CLI does the same for Postgres, MySQL, Oracle and any SQLAlchemy URL.",
-      "import duckdb, sqljev.duckdb\ncon = duckdb.connect('support.duckdb')\nsqljev.duckdb.register(con)\n\nSELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry');\n\n# any other database, from the shell:\n# sqljev query \"$DB_URL\" \"SELECT * FROM tickets\" --where \"the customer is angry\""],
+    ["SQL Server", "2016 and later, Azure SQL", "Judge rows once from any machine; jev.prob then reads the stored answer with an index seek. SQL Server 2025 and Azure SQL can also judge from T-SQL (EXEC jev.judge) through the gateway.", [
+      ["Install the functions in your database", "sqlcmd -S your-server -d your-db -i sql/sqlserver/install.sql"],
+      ["Judge the rows (only new or edited rows reach the model)", "pip install \"sqljev[laya,db]\" pymssql\nsqljev judge \"mssql+pymssql://user:password@host/your-db\" --source dbo.tickets --prob \"the customer is angry\""],
+      ["Ask in SQL", "SELECT * FROM dbo.tickets AS t\nWHERE jev.prob((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n               N'the customer is angry') >= 0.5;"]]],
+    ["PostgreSQL", "RDS, Aurora, Cloud SQL, Supabase, Neon", "No extension or superuser needed, so it works on managed Postgres. Rows are keyed by their jsonb content.", [
+      ["Install the functions", "psql \"$DB_URL\" -f sql/postgres/install.sql"],
+      ["Judge the rows", "pip install \"sqljev[laya,db]\" \"psycopg[binary]\"\nsqljev judge \"postgresql+psycopg://user:password@host/db\" --source public.tickets --prob \"the customer is angry\""],
+      ["Ask in SQL", "SELECT * FROM tickets t\nWHERE jev.prob(to_jsonb(t), 'the customer is angry') >= 0.5;\n\nSELECT jev.choice(to_jsonb(t), 'which team?',\n                  ARRAY['billing', 'technical', 'sales']) AS team, count(*)\nFROM tickets t GROUP BY team;"]]],
+    ["MySQL / MariaDB", "RDS, Aurora, Cloud SQL, Azure", "Stored functions over a jev_answers table. sqljev judge prints the exact JSON_OBJECT(...) to pass.", [
+      ["Install the functions", "mysql -h host -u user -p your_db < sql/mysql/install.sql"],
+      ["Judge the rows", "pip install \"sqljev[laya,db]\" pymysql\nsqljev judge \"mysql+pymysql://user:password@host/your_db\" --source tickets --prob \"the customer is angry\""],
+      ["Ask in SQL", "SELECT * FROM tickets t\nWHERE jev_prob(JSON_OBJECT('id', t.id, 'subject', t.subject, 'body', t.body),\n               'the customer is angry') >= 0.5;"]]],
+    ["Snowflake", "Laya inside Snowpark Container Services", "Laya runs on a GPU compute pool inside your account, so rows never leave Snowflake. Service functions send up to 1,000 rows per call.", [
+      ["Build and push the gateway image", "docker build -f deploy/Dockerfile --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124 \\\n  -t <org>-<account>.registry.snowflakecomputing.com/sqljev/public/sqljev_repo/sqljev:0.1.0 .\ndocker push <org>-<account>.registry.snowflakecomputing.com/sqljev/public/sqljev_repo/sqljev:0.1.0"],
+      ["Create the service and functions", "snowsql -f sql/snowflake/install_spcs.sql"],
+      ["Ask in SQL", "SELECT * FROM tickets t\nWHERE jev(OBJECT_CONSTRUCT(t.*), 'the customer is angry');\n\nSELECT jev_choice(OBJECT_CONSTRUCT(t.*), 'which team should handle this?',\n                  ['billing', 'technical', 'sales']) AS team, COUNT(*)\nFROM tickets t GROUP BY team;"]]],
+    ["Databricks", "and any Spark", "pandas UDFs get Arrow batches of 10,000 rows; Laya loads once per worker. Use a GPU cluster for speed.", [
+      ["Install on the cluster", "%pip install \"sqljev[laya]\""],
+      ["Register the functions (Python cell)", "import sqljev.spark\nsqljev.spark.register(spark, device='cuda')"],
+      ["Ask in SQL", "SELECT * FROM support.tickets\nWHERE jev(to_json(struct(subject, body)), 'the customer is angry');"]]],
+    ["BigQuery", "remote functions on Cloud Run", "BigQuery batches rows into each remote-function call; the gateway answers a whole batch at once.", [
+      ["Deploy the gateway to Cloud Run", "gcloud run deploy sqljev --source . --region us-central1 --no-allow-unauthenticated --cpu 8 --memory 16Gi"],
+      ["Create the connection and functions", "bq mk --connection --location=US --connection_type=CLOUD_RESOURCE sqljev_conn\nbq query --use_legacy_sql=false < sql/bigquery/install.sql"],
+      ["Ask in SQL", "SELECT * FROM `proj.support.tickets` t\nWHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');"]]],
+    ["Redshift", "Lambda UDFs", "Redshift sends row batches to a tiny stdlib-only Lambda that forwards them to your gateway.", [
+      ["Deploy the Lambda", "pip install --target build/ . && (cd build && zip -qr ../sqljev-lambda.zip .)\naws lambda create-function --function-name sqljev --runtime python3.12 \\\n  --handler sqljev.aws_lambda.handler --zip-file fileb://sqljev-lambda.zip --role <lambda-role-arn>"],
+      ["Create the functions", "psql \"$REDSHIFT_URL\" -f sql/redshift/install.sql"],
+      ["Ask in SQL", "SELECT * FROM tickets\nWHERE jev(JSON_SERIALIZE(OBJECT('subject', subject, 'body', body)),\n          'the customer is angry');"]]],
+    ["DuckDB", "Python, in-process", "Arrow UDFs see 2,048 rows at a time, and Laya runs in the same process.", [
+      ["Install", "pip install \"sqljev[laya,duckdb]\""],
+      ["Register and ask", "import duckdb, sqljev.duckdb\ncon = duckdb.connect('support.duckdb')\nsqljev.duckdb.register(con)\ncon.sql(\"SELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry')\").show()"]]],
+    ["Others", "Oracle, Db2, Trino, SQLite and any SQLAlchemy URL", "The sqljev command line works with any SQLAlchemy URL, and can write answers back as a table you join.", [
+      ["Install", "pip install \"sqljev[laya,db]\""],
+      ["Filter, rank or classify a query", "sqljev query \"$DB_URL\" \"SELECT * FROM tickets\" --where \"the customer is angry\" --limit 20\nsqljev query \"$DB_URL\" \"SELECT * FROM tickets\" --choice \"which team?\" --options billing,technical,sales"],
+      ["Write answers back as a table", "sqljev materialize \"$DB_URL\" \"SELECT id, subject, body FROM tickets\" --key id \\\n  --prob \"the customer is angry\" --into ticket_anger"]]],
   ];
-  const tabs = $("#tabs"); let typing = 0;
+  const tabs = $("#tabs");
   DBS.forEach(([name, sub], i) => {
     const b = document.createElement("button");
     b.className = "tab"; b.role = "tab"; b.id = "tab" + i; b.setAttribute("aria-controls", "dbpanel");
@@ -644,16 +737,24 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
     });
     tabs.appendChild(b);
   });
-  async function show(i) {
-    const run = ++typing;
+  function show(i) {
     tabs.querySelectorAll(".tab").forEach((t, j) => { t.setAttribute("aria-selected", i === j); t.tabIndex = i === j ? 0 : -1; });
     $("#dbpanel").setAttribute("aria-labelledby", "tab" + i);
+    $("#dbsub").textContent = DBS[i][0] + ": " + DBS[i][1];
     $("#dbhow").textContent = DBS[i][2];
-    const text = DBS[i][3], pre = $("#dbsql");
+    $("#tab" + i).scrollIntoView({ block: "nearest", inline: "nearest" });
+    const box = $("#dbsteps");
+    box.innerHTML = DBS[i][3].map(([title, code], k) => `<div class="step" style="animation-delay:${k * 0.09}s">
+      <div class="step-head"><span class="n">${k + 1}</span>${title}</div>
+      <div class="snippet"><pre>${isSql(code) ? hl(code) : hlShell(code)}</pre><button type="button" class="copy" data-k="${k}" aria-label="Copy step ${k + 1}">Copy</button></div></div>`).join("");
+    box.querySelectorAll(".copy").forEach(btn => btn.addEventListener("click", async () => {
+      const text = DBS[i][3][+btn.dataset.k][1];
+      try { await navigator.clipboard.writeText(text); }
+      catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+      btn.textContent = "Copied"; btn.classList.add("done");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("done"); }, 1500);
+    }));
     once(owls.peek, "nod", 520);
-    if (reduce) { pre.innerHTML = hl(text); return; }
-    for (let n = 0; n <= text.length; n += 4) { if (run !== typing) return; pre.innerHTML = hl(text.slice(0, n)); await sleep(8); }
-    pre.innerHTML = hl(text);
   }
   show(0);
 
@@ -702,6 +803,18 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
     while (pipeOn) { flow(); await sleep(520); }
   }
 
+
+  // ------------------------------------------------ benchmark bars (bench/results/laya_english_gpu.json)
+  const BENCH = [{"t": "Contract clause: which type?", "a": 0.995, "b": 0.2031, "k": "choice"}, {"t": "Job post: fully remote?", "a": 0.9223, "b": 0.6017, "k": "noul"}, {"t": "Support ticket: is the customer angry?", "a": 0.8944, "b": 0.6968, "k": "noul"}, {"t": "Advisor email: guarantees returns?", "a": 0.8652, "b": 0.7473, "k": "noul"}, {"t": "Support ticket: which team?", "a": 0.8541, "b": 0.3518, "k": "choice"}, {"t": "Job post: how senior?", "a": 0.8533, "b": 0.3356, "k": "score"}, {"t": "Expense: which category?", "a": 0.8506, "b": 0.2087, "k": "choice"}, {"t": "Product review: reports a defect?", "a": 0.8503, "b": 0.7015, "k": "noul"}, {"t": "Product review: sentiment", "a": 0.828, "b": 0.4533, "k": "score"}, {"t": "Adverse event: was it serious?", "a": 0.6992, "b": 0.6499, "k": "noul"}, {"t": "Two records: same company? (join)", "a": 0.6846, "b": 0.5065, "k": "noul"}, {"t": "Adverse event: which body system?", "a": 0.6803, "b": 0.2035, "k": "choice"}, {"t": "Rental listing: pets allowed?", "a": 0.595, "b": 0.5459, "k": "noul"}];
+  $("#bars").innerHTML = BENCH.map(r => `<div class="brow" role="listitem"><span>${r.t}</span>
+    <div class="btrack"><div class="bfill ${r.a < .75 ? "weak" : ""}" data-w="${r.a * 100}"></div>
+    <div class="bbase" style="left:calc(${r.b * 100}% - 1px)" title="baseline ${r.b.toFixed(3)}"></div></div>
+    <span class="bval">${r.a.toFixed(3)}</span></div>`).join("");
+  function fillBars() {
+    const b = $("#bars"); b.classList.add("on");
+    b.querySelectorAll(".bfill").forEach((f, i) => setTimeout(() => f.style.width = f.dataset.w + "%", reduce ? 0 : i * 70));
+  }
+
   // ------------------------------------------------ functions grid (illustrative)
   const FROWS = [
     ["Refund please, charged twice", 1, .87, "billing", 2],
@@ -726,7 +839,7 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
   // ------------------------------------------------ fine-tune ring
   const dot = $("#dot"), stations = [...document.querySelectorAll(".station")], acc = $("#acc");
   let ringOn = false, ringT = 0, laps = 0, lastTs = null;
-  const ACC = [.362, .58, .69, .766];
+  const ACC = [.694, 1.0];   // private/ft_test.py: ae_serious demo, 1,000 held-out reports
   function ring(ts) {
     if (!ringOn) { lastTs = null; return; }
     lastTs ??= ts; ringT += (ts - lastTs) / 7000; lastTs = ts;
@@ -743,14 +856,15 @@ SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
     const id = e.target.id;
     if (id === "pipe") { pipeOn = e.isIntersecting && !reduce; if (pipeOn) pipeLoop(); if (reduce) { rowsIn = 12; judged = 4; tally(); } }
     if (id === "fgrid" && e.isIntersecting) fillGrid();
+    if (id === "bars" && e.isIntersecting) fillBars();
     if (id === "vs" && e.isIntersecting) e.target.querySelectorAll(".fill").forEach(f => f.style.width = f.dataset.w + "%");
     if (id === "ring") {
       ringOn = e.isIntersecting && !reduce;
       if (ringOn) requestAnimationFrame(ring);
-      if (reduce) { acc.textContent = "0.766"; owls.grad.classList.add("graduated"); }
+      if (reduce) { acc.textContent = "1.000"; owls.grad.classList.add("graduated"); }
     }
   }), { threshold: .25 });
-  ["pipe", "fgrid", "vs", "ring"].forEach(id => io.observe(document.getElementById(id)));
+  ["pipe", "fgrid", "vs", "ring", "bars"].forEach(id => io.observe(document.getElementById(id)));
 })();
 </script>
 </body>

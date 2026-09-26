@@ -15,7 +15,7 @@
 -- Azure SQL Managed Instance) and the gateway on https:// port 443 under a DNS name with a publicly trusted
 -- certificate (Azure SQL Database additionally only allows Azure-hosted endpoints, e.g. *.azurewebsites.net,
 -- *.azurecontainerapps.io). On SQL Server 2016-2022, or without outbound HTTPS, fill
--- the same table from outside:  sqljev judge-sqlserver "mssql+pyodbc://..." --source dbo.tickets --prob "..."
+-- the same table from outside:  sqljev judge "mssql+pyodbc://..." --source dbo.tickets --prob "..."
 --
 -- Setup:
 --   sqljev gateway --host 0.0.0.0 --port 8443 --certfile cert.pem --keyfile key.pem   (SQLJEV_GATEWAY_TOKEN=...)

@@ -11,6 +11,9 @@ Routes (all POST, JSON):
   /snowflake/<fn>        Snowflake external / service functions: {"data": [[rownum, args...]]}
                          -> {"data": [[rownum, result]]}
   /redshift              Redshift Lambda UDF payload over HTTP (the same handler as sqljev.aws_lambda)
+  /v1/systemone          TypeSafe Jev's wire protocol, for Jev clients such as pg-jev: batch requests
+                         {"state": {"condition", "rows": [...]}, "questions": {"r0": ...}} are answered by the
+                         engine, so `SET jev.api_url = 'http://gateway:8765/v1/systemone'` runs pg-jev on Laya
   GET /health, GET /stats
 
 Each database already sends rows in batches (BigQuery up to max_batching_rows, Snowflake/Redshift in their
@@ -23,6 +26,7 @@ BigQuery cannot send headers: run the gateway on Cloud Run with IAM auth instead
 import hmac
 import json
 import os
+import re
 import sys
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -63,6 +67,42 @@ def handle_redshift(engine, event):
         return {"success": True, "num_records": len(results), "results": _json_safe(results)}
     except Exception as e:    # noqa: BLE001 -- Redshift shows error_msg to the user
         return {"success": False, "error_msg": str(e)}
+
+
+_ROW_REF = re.compile(r"`rows\[(\d+)\]`")
+_JEV_PREFIX = {"score": "Rate the record `rows[%d]`: ", "choice": "For the record `rows[%d]`: "}
+
+
+def handle_systemone(engine, body):
+    """Answer a Jev batch request (one shared state with `rows`, one question per row, the format pg-jev and
+    sqljev's own jev backend send) with the engine: questions are grouped back into (question, rows) pairs."""
+    state, questions = body.get("state"), body.get("questions")
+    if not isinstance(state, dict) or not isinstance(state.get("rows"), list) or not isinstance(questions, dict):
+        raise JevError("sqljev: /v1/systemone accepts batch requests: state {'rows': [...]} with one question per "
+                       "row that names `rows[i]` (as pg-jev sends); use /v1/eval for everything else")
+    rows, groups = state["rows"], {}
+    for qid, q in questions.items():
+        m = _ROW_REF.search(q.get("instructions") or "")
+        if not m or int(m.group(1)) >= len(rows):
+            raise JevError("sqljev: question %r does not name a row as `rows[i]`" % qid)
+        i, kind = int(m.group(1)), q.get("type")
+        if kind == "noul":
+            query, opts = state.get("condition") or "", None
+        elif kind in _JEV_PREFIX:
+            prefix = _JEV_PREFIX[kind] % i
+            instr = q["instructions"]
+            query = instr[len(prefix):] if instr.startswith(prefix) else instr
+            crit = q.get("criteria")
+            opts = list(crit.keys()) if isinstance(crit, dict) else list(crit or [])
+        else:
+            raise JevError("sqljev: unknown question type %r" % kind)
+        groups.setdefault((kind, query, tuple(opts or ())), []).append((qid, i))
+    answers = {}
+    for (kind, query, opts), items in groups.items():
+        got = engine.evaluate([rows[i] for _, i in items], query, kind, list(opts) or None)
+        answers.update({qid: a for (qid, _), a in zip(items, got)})
+    return {"model": "sqljev-" + engine.cfg["backend"], "answers": answers,
+            "usage": {"input_tokens": 0, "output_tokens": 0}}
 
 
 def _json_safe(values):
@@ -126,6 +166,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, handle_snowflake(self.engine, body, function_name(path.rsplit("/", 1)[1])))
             if path == "/redshift":
                 return self._send(200, handle_redshift(self.engine, body))
+            if path == "/v1/systemone":
+                return self._send(200, handle_systemone(self.engine, body))
             return self._send(404, {"error": "not found: " + path})
         except (JevError, ValueError, KeyError, TypeError, IndexError) as e:
             # 400 is not retried by BigQuery/Snowflake: validation errors surface as query errors.

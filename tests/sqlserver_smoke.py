@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SQL Server smoke test: install sql/sqlserver/install.sql, judge a table with `sqljev judge-sqlserver`
+"""SQL Server smoke test: install sql/sqlserver/install.sql, judge a table with `sqljev judge`
 against the mock model, and read answers back through jev.prob / jev.matches / jev.choice / jev.answers_for.
 
     SQLJEV_TEST_MSSQL="mssql+pymssql://sa:pw@127.0.0.1:1433/master" python tests/sqlserver_smoke.py
@@ -38,9 +38,9 @@ threading.Thread(target=srv.serve_forever, daemon=True).start()
 api = "http://127.0.0.1:%d/v1/systemone" % srv.server_address[1]
 os.environ["TYPESAFE_API_KEY"] = "test-key"
 common = ["--backend", "jev", "--api-url", api]
-main(["judge-sqlserver", db_url, "--source", "dbo.tickets", "--prob", "is angry", *common])
-main(["judge-sqlserver", db_url, "--source", "tickets", "--prob", "is angry", *common])            # nothing new
-main(["judge-sqlserver", db_url, "--source", "dbo.tickets", "--choice", "team", "--options", '["a", "b"]', *common])
+main(["judge", db_url, "--source", "dbo.tickets", "--prob", "is angry", *common])
+main(["judge", db_url, "--source", "tickets", "--prob", "is angry", *common])            # nothing new
+main(["judge", db_url, "--source", "dbo.tickets", "--choice", "team", "--options", '["a", "b"]', *common])
 
 ROW = "(SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)"
 with eng.connect() as c:
