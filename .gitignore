@@ -1,0 +1,28 @@
+# Local-only material: notes, credentials, reference clones, datasets, checkpoints.
+# Never committed; the repo is meant to go public.
+/private/
+.env
+.env.*
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Data produced by sql-jev dataset / eval, local databases
+*.jsonl
+*.db
+*.duckdb
+checkpoints/
+
+.DS_Store
+.idea/
+.vscode/

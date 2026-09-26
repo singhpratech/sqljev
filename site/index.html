@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sql-jev-laya</title>
+<meta name="description" content="Ask your SQL rows questions in plain language. jev() for SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB, judged by Laya, an open-weights model you can fine-tune on your own tables.">
+<link rel="icon" href="assets/rowl.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #E9EEF5; --surface: #F7F9FC; --ink: #152238; --ink-2: #4A5872; --line: #C9D3E1;
+  --amber: #F0A202; --amber-deep: #C27F00; --moss: #2F8F5B; --plum: #7D3C6B;
+  --feather: #7A5230; --feather-dark: #5E3E22; --belly: #F6E7C8; --belly-line: #D9C39A; --beak: #E08A00;
+  --code-bg: #152238; --code-ink: #E6ECF7; --code-dim: #8C9AB8; --code-str: #F5C45E; --code-kw: #8FD3B6; --code-fn: #F29BD0;
+  --glow: none;
+  --radius-s: 6px; --radius-l: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1730; --surface: #15203D; --ink: #E6ECF7; --ink-2: #A7B3CC; --line: #26345A;
+    --moss: #4FC08A; --plum: #D48BC2; --belly: #EADAB8; --code-bg: #0A1126;
+    --glow: drop-shadow(0 0 6px rgba(240, 162, 2, .75));
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1730; --surface: #15203D; --ink: #E6ECF7; --ink-2: #A7B3CC; --line: #26345A;
+  --moss: #4FC08A; --plum: #D48BC2; --belly: #EADAB8; --code-bg: #0A1126;
+  --glow: drop-shadow(0 0 6px rgba(240, 162, 2, .75));
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 18px; line-height: 1.55;
+  font-optical-sizing: auto;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 45%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  overflow-x: hidden;
+}
+a { color: inherit; }
+code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+/* ------------------------------------------------ owl */
+.owl { display: block; overflow: visible; }
+.owl .tuft { fill: var(--feather-dark); }
+.owl .body { fill: var(--feather); }
+.owl .wing { fill: var(--feather-dark); transform-box: fill-box; }
+.owl .belly { fill: var(--belly); }
+.owl .grid line { stroke: var(--belly-line); stroke-width: 2.5; stroke-linecap: round; }
+.owl .disc { fill: var(--belly); }
+.owl .iris { fill: var(--amber); filter: var(--glow); }
+.owl .pupil { fill: #152238; transition: transform .25s ease-out; }
+.owl .shine { fill: #fff; transition: transform .25s ease-out; }
+.owl .lid { fill: var(--feather); transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); }
+.owl .beak, .owl .foot { fill: var(--beak); }
+.owl .bar-t { fill: var(--moss); } .owl .bar-f { fill: var(--plum); }
+.owl .cap { opacity: 0; transform: translateY(-30px); transition: opacity .4s, transform .5s cubic-bezier(.3, 1.6, .5, 1); }
+.owl.graduated .cap { opacity: 1; transform: translateY(0); }
+.owl .head { transform-box: view-box; transform-origin: 100px 90px; transition: transform .35s ease; }
+.owl.blink .lid { animation: blink .22s ease-in-out; }
+@keyframes blink { 50% { transform: scaleY(1); } }
+.owl.nod .head { animation: nod .5s ease; }
+@keyframes nod { 30% { transform: translateY(5px) rotate(-3deg); } 60% { transform: translateY(-2px); } }
+.owl.flap .wing-l { animation: flapL .45s ease 2; transform-origin: 100% 0; }
+.owl.flap .wing-r { animation: flapR .45s ease 2; transform-origin: 0 0; }
+@keyframes flapL { 50% { transform: rotate(18deg); } }
+@keyframes flapR { 50% { transform: rotate(-18deg); } }
+.owl.chew .grid-bars rect { animation: chew .5s ease; }
+@keyframes chew { 50% { opacity: .2; } }
+
+/* ------------------------------------------------ nav */
+nav.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--paper) 82%, transparent); border-bottom: 1px solid var(--line); }
+nav.top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 20px; text-decoration: none; letter-spacing: -.01em; }
+.brand svg { width: 34px; height: 38px; }
+nav.top .links { margin-left: auto; display: flex; gap: 22px; font-size: 16px; }
+nav.top .links a { text-decoration: none; color: var(--ink-2); }
+nav.top .links a:hover { color: var(--ink); }
+@media (max-width: 760px) { nav.top .links a.opt { display: none; } }
+
+/* ------------------------------------------------ hero */
+.hero { padding: 56px 0 72px; }
+.hero .wrap { display: grid; gap: 48px; align-items: center; }
+@media (min-width: 980px) { .hero .wrap { grid-template-columns: 5fr 6fr; } }
+.hero .wrap > * { min-width: 0; }
+h1 { font-size: clamp(42px, 6.4vw, 78px); line-height: .98; letter-spacing: -.035em; font-weight: 800; margin: 0 0 22px;
+  font-variation-settings: "opsz" 96; }
+.hero .lede { font-size: 20px; color: var(--ink-2); max-width: 34em; margin: 0 0 28px; }
+.hero .lede strong { color: var(--ink); font-weight: 650; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 999px; font-weight: 650;
+  font-size: 17px; text-decoration: none; border: 2px solid var(--ink); cursor: pointer; font-family: inherit; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: color-mix(in srgb, var(--ink) 85%, var(--amber)); }
+.install { display: inline-flex; align-items: center; border: 2px solid var(--line); border-radius: 999px; background: var(--surface);
+  padding: 4px 4px 4px 18px; font-size: 15px; gap: 10px; max-width: 100%; }
+.install code { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.install button { border: 0; background: var(--amber); color: #152238; font: inherit; font-weight: 650; border-radius: 999px;
+  padding: 8px 14px; cursor: pointer; font-family: "Bricolage Grotesque", sans-serif; }
+
+/* console */
+.stage { position: relative; padding-top: 96px; }
+.stage .perch { position: absolute; right: 38%; top: 0; width: 118px; z-index: 3; }
+.console { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); overflow: hidden;
+  box-shadow: 0 30px 60px -30px rgba(21, 34, 56, .55); border: 1px solid color-mix(in srgb, var(--code-ink) 12%, transparent); }
+.console .bar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13px; color: var(--code-dim);
+  border-bottom: 1px solid color-mix(in srgb, var(--code-ink) 10%, transparent); }
+.console .dialect { color: var(--code-str); font-weight: 600; transition: opacity .3s; }
+.console .file { margin-left: auto; }
+.console pre { margin: 0; padding: 18px 18px 14px; font-size: 14px; line-height: 1.6; min-height: 98px; white-space: pre-wrap; word-break: break-word; }
+.console pre .caret { display: inline-block; width: 8px; height: 1.1em; vertical-align: -2px; background: var(--amber); animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.tok-kw { color: var(--code-kw); } .tok-fn { color: var(--code-fn); } .tok-str { color: var(--code-str); } .tok-dim { color: var(--code-dim); }
+.result { position: relative; background: var(--surface); color: var(--ink); }
+.result .row { display: grid; grid-template-columns: 34px 1.1fr 2fr 108px; gap: 10px; align-items: center; padding: 0 16px;
+  height: 38px; font-size: 14px; border-top: 1px solid var(--line); overflow: hidden;
+  transition: height .45s ease, opacity .45s ease, background .3s, transform .6s cubic-bezier(.2, .8, .2, 1); }
+.result .row.head { font-weight: 700; color: var(--ink-2); border-top: 0; height: 34px; font-size: 13px; }
+.result .row > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result .row .id { color: var(--ink-2); font-family: "JetBrains Mono", monospace; font-size: 13px; }
+.result .row.scan { background: color-mix(in srgb, var(--amber) 22%, transparent); }
+.result .row.yes { background: color-mix(in srgb, var(--moss) 12%, transparent); }
+.result .row.gone { height: 0; opacity: 0; border-top-width: 0; }
+.pbar { position: relative; height: 18px; border-radius: 9px; background: color-mix(in srgb, var(--line) 70%, transparent); overflow: hidden; }
+.pbar i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 9px; background: var(--plum); transition: width .5s cubic-bezier(.2, .8, .2, 1); }
+.pbar.yes i { background: var(--moss); }
+.pbar b { position: absolute; right: 7px; top: 0; font-size: 11.5px; line-height: 18px; font-family: "JetBrains Mono", monospace; font-weight: 600; color: var(--ink); }
+.result .foot { padding: 10px 16px; font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line); min-height: 40px; }
+.stage .note { font-size: 13px; color: var(--ink-2); margin: 10px 4px 0; }
+@media (max-width: 560px) { .result .row { grid-template-columns: 26px 1fr 92px; } .result .row .body { display: none; } }
+
+/* ------------------------------------------------ sections */
+section { padding: 88px 0; position: relative; }
+section h2 { font-size: clamp(32px, 4.4vw, 52px); letter-spacing: -.03em; line-height: 1.02; margin: 0 0 14px; font-weight: 780; }
+section .intro { font-size: 19px; color: var(--ink-2); max-width: 40em; margin: 0 0 40px; }
+.peek { position: absolute; width: 70px; right: 6%; top: -38px; }
+
+/* databases */
+.dbs { display: grid; gap: 24px; }
+@media (min-width: 900px) { .dbs { grid-template-columns: 260px 1fr; } }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-content: start; }
+@media (min-width: 900px) { .tabs { flex-direction: column; } }
+.tab { font: inherit; font-size: 17px; font-weight: 600; text-align: left; padding: 11px 16px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line); background: var(--surface); color: var(--ink); transition: border-color .2s, transform .2s; }
+.tab:hover { transform: translateX(3px); }
+.tab[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.tab small { display: block; font-weight: 400; font-size: 13px; opacity: .75; }
+.dbcode { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); padding: 22px; min-height: 290px; }
+.dbcode pre { margin: 0; font-size: 14px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+.dbcode .how { color: var(--code-dim); font-size: 14px; margin: 0 0 14px; font-family: "Bricolage Grotesque", sans-serif; }
+
+/* pipeline */
+.pipe { position: relative; height: 300px; background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius-l); overflow: hidden; }
+.pipe .lane { position: absolute; left: 0; right: 0; top: 118px; height: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 10px, transparent 10px 18px); }
+.pipe .bypass { position: absolute; left: 44%; right: 6%; top: 250px; height: 2px; background: repeating-linear-gradient(90deg, var(--amber) 0 10px, transparent 10px 18px); opacity: .7; }
+.pipe .gate { position: absolute; top: 40px; width: 2px; height: 156px; background: var(--line); }
+.pipe .gate span { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 14px; font-weight: 650; color: var(--ink-2); }
+.pipe .chip { position: absolute; left: 0; top: 104px; width: 54px; height: 30px; border-radius: 6px; background: var(--paper); border: 2px solid var(--ink-2);
+  display: grid; align-content: center; gap: 3px; padding: 0 7px; }
+.pipe .chip i { display: block; height: 3px; border-radius: 2px; background: var(--ink-2); opacity: .55; }
+.pipe .chip i:nth-child(2) { width: 70%; }
+.pipe .chip.dup { border-color: var(--plum); }
+.pipe .chip.hot { border-color: var(--amber); }
+.pipe .chip.hot::after { content: ""; position: absolute; right: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--amber); }
+.pipe .owlbox { position: absolute; left: 73%; top: 44px; width: 110px; }
+.pipe .out { position: absolute; right: 16px; top: 70px; display: grid; gap: 6px; justify-items: start; width: 70px; }
+.pipe .ans { width: 70px; height: 12px; border-radius: 6px; transform-origin: 0 50%; }
+.pipe .count { position: absolute; left: 16px; bottom: 12px; font-size: 14px; color: var(--ink-2); }
+.pipe .legend { position: absolute; right: 16px; bottom: 12px; display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); }
+.pipe .legend span { display: inline-flex; align-items: center; gap: 6px; }
+.pipe .legend i { width: 14px; height: 10px; border-radius: 3px; border: 2px solid var(--ink-2); }
+.pipe .legend i.dup { border-color: var(--plum); } .pipe .legend i.hot { border-color: var(--amber); background: var(--amber); }
+@media (max-width: 700px) { .pipe .legend { display: none; } }
+.steps { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 22px; counter-reset: s; }
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(5, 1fr); } }
+.steps li { counter-increment: s; font-size: 16px; color: var(--ink-2); }
+.steps li::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--ink); color: var(--paper); font-weight: 750; margin-bottom: 10px; }
+.steps b { display: block; color: var(--ink); font-size: 18px; margin-bottom: 4px; }
+@media (max-width: 700px) { .pipe .out { width: 44px; } .pipe { height: 260px; } .pipe .gate span { font-size: 12px; } .pipe .owlbox { width: 80px; left: 70%; } .pipe .ans { width: 44px; } }
+
+/* functions grid */
+.fgrid { background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius-l); overflow-x: auto; }
+.fgrid table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 15px; }
+.fgrid th { text-align: left; padding: 14px 14px 12px; font-weight: 650; vertical-align: bottom; border-bottom: 2px solid var(--ink); }
+.fgrid th code { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-2); margin-top: 3px; }
+.fgrid td { padding: 11px 14px; border-top: 1px solid var(--line); height: 50px; }
+.fgrid td:first-child { max-width: 260px; }
+.cell { opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s; display: inline-flex; align-items: center; gap: 8px; }
+.fgrid.on .cell { opacity: 1; transform: none; }
+.tick { width: 26px; height: 26px; }
+.tick path { fill: none; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; transition: stroke-dashoffset .5s .2s; }
+.fgrid.on .tick path { stroke-dashoffset: 0; }
+.tick.y path { stroke: var(--moss); } .tick.n path { stroke: var(--plum); }
+.mini { width: 110px; } .mini .pbar { height: 14px; } .mini .pbar b { line-height: 14px; font-size: 10.5px; }
+.pill { padding: 3px 11px; border-radius: 999px; font-size: 13.5px; font-weight: 600; border: 2px solid currentColor; }
+.pill.billing { color: #2A6FB0; } .pill.technical { color: var(--moss); } .pill.security { color: var(--plum); } .pill.sales { color: var(--amber-deep); }
+.dots { display: inline-flex; gap: 4px; } .dots i { width: 12px; height: 12px; border-radius: 3px; background: var(--line); transition: background .3s; }
+.dots i.f { background: var(--amber); }
+.fnotes { display: grid; gap: 14px 32px; margin-top: 28px; font-size: 16px; color: var(--ink-2); }
+@media (min-width: 900px) { .fnotes { grid-template-columns: 1fr 1fr; } }
+.fnotes code { color: var(--ink); font-size: 14.5px; }
+.caption { font-size: 13px; color: var(--ink-2); margin-top: 10px; }
+
+/* models */
+.vs { display: grid; gap: 34px; }
+@media (min-width: 900px) { .vs { grid-template-columns: 1fr 1fr; } }
+.metric { margin-bottom: 22px; }
+.metric h3 { font-size: 17px; margin: 0 0 8px; font-weight: 650; }
+.metric .line { display: grid; grid-template-columns: 58px 1fr 64px; gap: 10px; align-items: center; font-size: 15px; margin: 4px 0; }
+.metric .track { height: 16px; border-radius: 8px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
+.metric .fill { height: 100%; width: 0; border-radius: 8px; transition: width 1.1s cubic-bezier(.2, .8, .2, 1); }
+.metric .fill.laya { background: var(--amber); } .metric .fill.jev { background: var(--ink-2); }
+.metric .val { font-family: "JetBrains Mono", monospace; font-size: 14px; text-align: right; }
+.verdict { font-size: 19px; line-height: 1.55; }
+.verdict p { margin: 0 0 16px; }
+.verdict .src { font-size: 13px; color: var(--ink-2); }
+
+/* fine-tune loop */
+.loop { display: grid; gap: 40px; align-items: center; }
+@media (min-width: 980px) { .loop { grid-template-columns: 1fr 1fr; } }
+.ring { position: relative; width: min(460px, calc(100% - 96px)); aspect-ratio: 1; margin: 30px auto; }
+.ring svg.track { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ring .track circle { fill: none; stroke: var(--line); stroke-width: 3; stroke-dasharray: 6 8; }
+.ring .dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 6px color-mix(in srgb, var(--amber) 25%, transparent); left: 50%; top: 8%; }
+.ring .station { position: absolute; transform: translate(-50%, -50%); background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
+  padding: 8px 12px; font-size: 14.5px; font-weight: 650; text-align: center; width: 150px; transition: border-color .3s, transform .3s; }
+.ring .station small { display: block; font-weight: 400; color: var(--ink-2); font-size: 12.5px; }
+.ring .station.lit { border-color: var(--amber); transform: translate(-50%, -50%) scale(1.06); }
+.ring .center { position: absolute; left: 50%; top: 50%; width: 36%; transform: translate(-50%, -46%); text-align: center; }
+.ring .acc { font-size: 15px; color: var(--ink-2); margin-top: 4px; }
+.ring .acc b { font-size: 26px; color: var(--ink); font-family: "JetBrains Mono", monospace; display: block; }
+.code-card { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-l); padding: 22px; }
+.code-card pre { margin: 0; font-size: 13.5px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+@media (max-width: 600px) {
+  .ring { width: 100%; aspect-ratio: auto; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .ring svg.track, .ring .dot { display: none; }
+  .ring .station { position: static; transform: none; width: auto; text-align: left; }
+  .ring .station.lit { transform: translateX(6px); }
+  .ring .center { position: static; transform: none; width: 150px; order: -1; margin: 0 auto 8px; }
+}
+
+/* uses */
+.uses { display: grid; gap: 0; border-top: 2px solid var(--ink); }
+.use { display: grid; gap: 6px 28px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+@media (min-width: 900px) { .use { grid-template-columns: 240px 1fr; } }
+.use h3 { margin: 0; font-size: 20px; font-weight: 700; }
+.use code { font-size: 14.5px; color: var(--ink-2); word-break: break-word; }
+.use code em { font-style: normal; color: var(--ink); background: color-mix(in srgb, var(--amber) 30%, transparent); border-radius: 3px; padding: 0 3px; }
+
+footer { padding: 56px 0 72px; border-top: 1px solid var(--line); font-size: 15px; color: var(--ink-2); }
+footer .wrap { display: grid; gap: 24px; }
+@media (min-width: 900px) { footer .wrap { grid-template-columns: 120px 1fr; align-items: start; } }
+footer p { margin: 0 0 8px; max-width: 60em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="owl-slot" data-owl="mini"></span>sql-jev-laya</a>
+    <div class="links">
+      <a class="opt" href="#databases">Databases</a>
+      <a class="opt" href="#how">How it works</a>
+      <a class="opt" href="#finetune">Fine-tune</a>
+      <a href="https://github.com/singhpratech/sql-jev-laya">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <h1>Ask your tables questions in plain English.</h1>
+      <p class="lede">sql-jev-laya adds <strong>jev()</strong> to SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB.
+        Every row is judged by <strong>Laya</strong>, an open-weights decision model that runs on your own hardware and
+        learns from your own tables.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/singhpratech/sql-jev-laya">View on GitHub</a>
+        <span class="install"><code id="pip">pip install "sql-jev-laya[laya,db]"</code><button type="button" id="copy">Copy</button></span>
+      </div>
+    </div>
+    <div class="stage" aria-label="Animated example: a SQL query judged row by row">
+      <div class="perch owl-slot" data-owl="hero"></div>
+      <div class="console">
+        <div class="bar"><span class="dialect" id="dialect">DuckDB</span><span class="file">tickets.sql</span></div>
+        <pre id="sql" aria-live="polite"></pre>
+        <div class="result" id="result"></div>
+      </div>
+      <p class="note">Real output: Laya's English checkpoint on CPU, all 8 rows in one forward pass.</p>
+    </div>
+  </div>
+</header>
+
+<section id="databases">
+  <div class="peek owl-slot" data-owl="peek"></div>
+  <div class="wrap">
+    <h2>Same functions, every database.</h2>
+    <p class="intro">Each database already hands its functions rows in batches. sql-jev-laya takes each batch as it comes,
+      so a thousand rows become a handful of forward passes, not a thousand calls.</p>
+    <div class="dbs">
+      <div class="tabs" role="tablist" aria-label="Database" id="tabs"></div>
+      <div class="dbcode" role="tabpanel" id="dbpanel"><p class="how" id="dbhow"></p><pre id="dbsql"></pre></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>One question, many rows, very little work.</h2>
+    <p class="intro">A SQL question is the same question asked of every row. So rows are de-duplicated, looked up in a
+      cache, and only the new ones reach the model, packed into shared forward passes.</p>
+    <div class="pipe" id="pipe" aria-hidden="true">
+      <div class="lane"></div><div class="bypass"></div>
+      <div class="gate" style="left:24%"><span>de-duplicate</span></div>
+      <div class="gate" style="left:44%"><span>answer cache</span></div>
+      <div class="gate" style="left:62%"><span>batch</span></div>
+      <div class="owlbox owl-slot" data-owl="pipe"></div>
+      <div class="out" id="out"></div>
+      <div class="count" id="count">0 rows in, 0 judged by the model</div>
+      <div class="legend"><span><i></i>new row</span><span><i class="dup"></i>duplicate</span><span><i class="hot"></i>already answered</span></div>
+    </div>
+    <ol class="steps">
+      <li><b>Rows as JSON</b>Each row becomes a compact object of its columns. NULLs are dropped to save tokens.</li>
+      <li><b>De-duplicate</b>Identical rows are judged once, however often they appear.</li>
+      <li><b>Answer cache</b>Rows already judged for this question come straight back. Edited rows are judged again.</li>
+      <li><b>Batch</b>The rest are packed into shared forward passes, sorted by length to waste less padding.</li>
+      <li><b>Answer</b>Calibrated probabilities flow back into your query: filter, sort, group.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="functions">
+  <div class="wrap">
+    <h2>Filter, rank, classify, score.</h2>
+    <p class="intro">Four kinds of answer, all ordinary SQL functions, so they compose with joins, <code>GROUP BY</code>
+      and <code>LIMIT</code> like anything else.</p>
+    <div class="fgrid" id="fgrid">
+      <table>
+        <thead><tr>
+          <th>subject</th>
+          <th>jev<code>jev(t, 'wants a refund')</code></th>
+          <th>jev_prob<code>jev_prob(t, 'is angry')</code></th>
+          <th>jev_choice<code>jev_choice(t, 'which team?', …)</code></th>
+          <th>jev_score_norm<code>jev_score_norm(t, 'how urgent?', …)</code></th>
+        </tr></thead>
+        <tbody id="fbody"></tbody>
+      </table>
+    </div>
+    <p class="caption">Illustrative values.</p>
+    <div class="fnotes">
+      <div><code>jev(row, condition [, threshold])</code> is true when the row satisfies the condition.</div>
+      <div><code>jev_prob(row, condition)</code> returns the probability, 0 to 1, for ranking and thresholds.</div>
+      <div><code>jev_choice(row, question, options)</code> returns the most likely option.</div>
+      <div><code>jev_score(row, question, levels)</code> places the row on ordered levels; <code>_norm</code> scales it to 0–1.</div>
+    </div>
+  </div>
+</section>
+
+<section id="models">
+  <div class="wrap">
+    <h2>Laya by default. Jev when you want it.</h2>
+    <p class="intro">Both are System One models: they don't write text, they return probabilities. They trade off
+      differently, and you can switch with one setting.</p>
+    <div class="vs" id="vs">
+      <div>
+        <div class="metric"><h3>Accuracy, zero-shot</h3>
+          <div class="line"><span>Laya</span><div class="track"><div class="fill laya" data-w="36.2"></div></div><span class="val">0.362</span></div>
+          <div class="line"><span>Jev</span><div class="track"><div class="fill jev" data-w="72.7"></div></div><span class="val">0.727</span></div></div>
+        <div class="metric"><h3>Accuracy, fine-tuned on the task</h3>
+          <div class="line"><span>Laya</span><div class="track"><div class="fill laya" data-w="76.6"></div></div><span class="val">0.766</span></div>
+          <div class="line"><span>Jev</span><div class="track"><div class="fill jev" data-w="0"></div></div><span class="val">n/a</span></div></div>
+        <div class="metric"><h3>Time per decision</h3>
+          <div class="line"><span>Laya</span><div class="track"><div class="fill laya" data-w="12"></div></div><span class="val">33 ms</span></div>
+          <div class="line"><span>Jev</span><div class="track"><div class="fill jev" data-w="92"></div></div><span class="val">~250 ms</span></div></div>
+      </div>
+      <div class="verdict">
+        <p><b>Laya</b> is Apache 2.0 with open weights. It runs on your GPU or CPU, so rows never leave your network and
+          nothing is billed per token. Out of the box it is good at clear yes/no conditions and weaker at fine-grained choices.</p>
+        <p><b>Jev</b> is TypeSafe's hosted model: stronger zero-shot, but your rows travel to an API and it cannot learn your domain.</p>
+        <p>Your tables are full of labels, which is why sql-jev-laya is built around fine-tuning Laya on them.</p>
+        <p class="src">Figures from Laya's published typed-decisions benchmark (T4 GPU for latency).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="finetune">
+  <div class="wrap">
+    <h2>Teach Rowl your tables.</h2>
+    <p class="intro">Every labelled column is training data. Export it, fine-tune Laya, measure on held-out rows, and serve
+      the new checkpoint to every database at once.</p>
+    <div class="loop">
+      <div class="ring" id="ring">
+        <svg class="track" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/></svg>
+        <div class="station" style="left:50%;top:8%">Labelled rows<small>any table with an answer column</small></div>
+        <div class="station" style="left:92%;top:50%">sql-jev-laya dataset<small>train / test JSONL</small></div>
+        <div class="station" style="left:50%;top:92%">Fine-tune<small>Laya notebook, free T4s</small></div>
+        <div class="station" style="left:8%;top:50%">sql-jev-laya eval<small>accuracy on your rows</small></div>
+        <div class="dot" id="dot"></div>
+        <div class="center"><div class="owl-slot" data-owl="grad"></div><div class="acc">accuracy<b id="acc">0.362</b></div></div>
+      </div>
+      <div class="code-card"><pre><span class="tok-dim"># labelled rows in, training data out (the label is never shown to the model)</span>
+sql-jev-laya dataset "$DB_URL" <span class="tok-str">"SELECT subject, body, team FROM tickets"</span> \
+    --label team --choice <span class="tok-str">"which team should handle this?"</span> \
+    --test-fraction 0.2 -o tickets.jsonl
+
+<span class="tok-dim"># how does the base model do on YOUR rows? and Jev?</span>
+sql-jev-laya eval tickets.test.jsonl
+sql-jev-laya eval tickets.test.jsonl --backend jev
+
+<span class="tok-dim"># fine-tune with Laya's notebook, then measure and serve</span>
+sql-jev-laya eval tickets.test.jsonl --model ./checkpoints/tickets --min-accuracy 0.85
+SQLJEV_MODEL=./checkpoints/tickets sql-jev-laya gateway --host 0.0.0.0</pre></div>
+    </div>
+  </div>
+</section>
+
+<section id="uses">
+  <div class="wrap">
+    <h2>What people ask their rows.</h2>
+    <p class="intro">Anything SQL can't say with <code>=</code>, <code>LIKE</code> or a regex. Keep dates, sums and exact
+      matches in SQL, and let the model judge meaning.</p>
+    <div class="uses">
+      <div class="use"><h3>Support</h3><code>WHERE jev(t, <em>'the customer threatens to cancel'</em>) AND created_at &gt; now() - interval '7 days'</code></div>
+      <div class="use"><h3>Pharmacovigilance</h3><code>jev_prob(r, <em>'the adverse event report describes liver injury'</em>)</code></div>
+      <div class="use"><h3>Compliance</h3><code>WHERE jev(e, <em>'the email promises a guaranteed return'</em>)</code></div>
+      <div class="use"><h3>Routing</h3><code>jev_choice(t, <em>'which team should handle this?'</em>, ['billing','technical','security'])</code></div>
+      <div class="use"><h3>Triage</h3><code>ORDER BY jev_score(i, <em>'how severe is this incident?'</em>, ['minor','major','critical']) DESC</code></div>
+      <div class="use"><h3>Data quality</h3><code>WHERE NOT jev(a, <em>'this is a real postal address'</em>)</code></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="owl-slot" data-owl="foot" style="width:90px"></div>
+    <div>
+      <p><b>sql-jev-laya</b> is Apache 2.0. It is inspired by and partly ported from
+        <a href="https://github.com/realZachi/pg-jev">pg-jev</a>, which does this inside PostgreSQL.</p>
+      <p>Laya is by Convai Innovations (<a href="https://github.com/NandhaKishorM/laya">github.com/NandhaKishorM/laya</a>, Apache 2.0).
+        Jev and TypeSafe are trademarks of their respective owners. This project is not affiliated with TypeSafe or Convai Innovations.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sleep = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+  const $ = (s, el = document) => el.querySelector(s);
+
+  // ------------------------------------------------ Rowl
+  function owl(cap) {
+    return `<svg class="owl" viewBox="0 -34 200 254" aria-hidden="true">
+      <g class="head">
+        <path class="tuft" d="M52 58 L38 18 L78 46 Z"/><path class="tuft" d="M148 58 L162 18 L122 46 Z"/>
+      </g>
+      <ellipse class="body" cx="100" cy="122" rx="74" ry="86"/>
+      <path class="wing wing-l" d="M28 118 C18 150 30 186 58 196 C50 170 48 140 52 118 Z"/>
+      <path class="wing wing-r" d="M172 118 C182 150 170 186 142 196 C150 170 152 140 148 118 Z"/>
+      <ellipse class="belly" cx="100" cy="150" rx="46" ry="50"/>
+      <g class="grid"><line x1="68" y1="128" x2="132" y2="128"/><line x1="62" y1="146" x2="138" y2="146"/>
+        <line x1="62" y1="164" x2="138" y2="164"/><line x1="70" y1="182" x2="130" y2="182"/><line x1="92" y1="112" x2="92" y2="196"/></g>
+      <g class="grid-bars"><rect class="bar-t" x="96" y="133" width="30" height="8" rx="4"/><rect class="bar-f" x="96" y="151" width="10" height="8" rx="4"/>
+        <rect class="bar-t" x="96" y="169" width="24" height="8" rx="4"/></g>
+      <g class="head">
+        <ellipse class="disc" cx="72" cy="82" rx="30" ry="29"/><ellipse class="disc" cx="128" cy="82" rx="30" ry="29"/>
+        <circle class="iris" cx="72" cy="82" r="21"/><circle class="iris" cx="128" cy="82" r="21"/>
+        <circle class="pupil" cx="72" cy="82" r="10"/><circle class="pupil" cx="128" cy="82" r="10"/>
+        <circle class="shine" cx="75" cy="78" r="3.5"/><circle class="shine" cx="131" cy="78" r="3.5"/>
+        <ellipse class="lid" cx="72" cy="82" rx="22" ry="22"/><ellipse class="lid" cx="128" cy="82" rx="22" ry="22"/>
+        <path class="beak" d="M92 100 L108 100 L100 116 Z"/>
+        ${cap ? `<g class="cap"><path d="M100 -30 L160 -8 L100 14 L40 -8 Z" fill="#152238"/><rect x="72" y="2" width="56" height="20" rx="3" fill="#152238"/>
+          <path d="M150 -4 L150 26" stroke="#F0A202" stroke-width="3"/><circle cx="150" cy="28" r="5" fill="#F0A202"/></g>` : ""}
+      </g>
+      <g class="foot"><rect x="70" y="200" width="7" height="14" rx="3.5"/><rect x="80" y="200" width="7" height="14" rx="3.5"/>
+        <rect x="113" y="200" width="7" height="14" rx="3.5"/><rect x="123" y="200" width="7" height="14" rx="3.5"/></g>
+    </svg>`;
+  }
+  const owls = {};
+  document.querySelectorAll(".owl-slot").forEach(el => {
+    el.innerHTML = owl(el.dataset.owl === "grad");
+    owls[el.dataset.owl] = el.querySelector(".owl");
+  });
+  const once = (o, cls, ms) => { if (!o || reduce) return; o.classList.remove(cls); void o.getBoundingClientRect(); o.classList.add(cls); setTimeout(() => o.classList.remove(cls), ms); };
+  // look at a point (page coordinates) or straight ahead
+  function look(o, x, y) {
+    if (!o) return;
+    const r = o.getBoundingClientRect();
+    let dx = 0, dy = 0;
+    if (x != null) {
+      const cx = r.left + r.width / 2, cy = r.top + r.height * .38;
+      const a = Math.atan2(y - cy, x - cx), d = Math.min(1, Math.hypot(x - cx, y - cy) / 300);
+      dx = Math.cos(a) * 7 * d; dy = Math.sin(a) * 7 * d;
+    }
+    o.querySelectorAll(".pupil, .shine").forEach(p => p.style.transform = `translate(${dx}px, ${dy}px)`);
+  }
+  let heroBusy = false;
+  addEventListener("pointermove", e => {
+    for (const [k, o] of Object.entries(owls)) if (!(k === "hero" && heroBusy)) look(o, e.clientX, e.clientY);
+  }, { passive: true });
+  if (!reduce) setInterval(() => {
+    const list = Object.values(owls); once(list[Math.floor(Math.random() * list.length)], "blink", 260);
+  }, 1400);
+  Object.values(owls).forEach(o => o.closest(".owl-slot").addEventListener("click", () => { once(o, "flap", 950); once(o, "nod", 520); }));
+
+  // ------------------------------------------------ copy
+  $("#copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("#pip").textContent); $("#copy").textContent = "Copied"; }
+    catch { $("#copy").textContent = "Select and copy"; }
+    setTimeout(() => $("#copy").textContent = "Copy", 1600);
+  });
+
+  // ------------------------------------------------ SQL highlighting
+  const KW = /\b(SELECT|FROM|WHERE|ORDER BY|GROUP BY|AS|DESC|LIMIT|AND|NOT|EXEC|FOR JSON PATH|WITHOUT_ARRAY_WRAPPER|ARRAY|array|struct|import)\b/g;
+  function hl(s) {
+    const esc = s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    return esc.split(/('(?:[^']|'')*'|--[^\n]*|#[^\n]*)/).map((part, i) => {
+      if (i % 2) return part.startsWith("--") || part.startsWith("#") ? `<span class="tok-dim">${part}</span>` : `<span class="tok-str">${part}</span>`;
+      return part.replace(/\b(jev(?:\.\w+|_\w+)?|to_json|OBJECT_CONSTRUCT|TO_JSON_STRING|JSON_SERIALIZE|OBJECT|register)\b(?=\()/g, '<span class="tok-fn">$1</span>').replace(KW, '<span class="tok-kw">$1</span>');
+    }).join("");
+  }
+
+  // ------------------------------------------------ hero: real Laya output (English checkpoint, CPU)
+  const TICKETS = [
+    [1, "Charged twice", "You billed me twice this month. Refund it now or I cancel!!", .873],
+    [2, "Thanks", "Great support yesterday, everything works now.", 0],
+    [3, "App crash", "The app crashes when I open settings, this is ridiculous.", .791],
+    [4, "Question", "How do I export my invoices to CSV?", 0],
+    [5, "Awful", "Worst service ever. I am furious and I want a manager.", .98],
+    [6, "Feature idea", "It would be nice to have a dark mode.", 0],
+    [7, "Login", "I can't log in since the update, please help.", .033],
+    [8, "Cancel", "This is unacceptable. Cancel my subscription immediately.", .898],
+  ];
+  const SCENES = [
+    { db: "DuckDB", mode: "where", sql: "SELECT * FROM tickets t\nWHERE jev(to_json(t), 'the customer is angry');" },
+    { db: "Snowflake", mode: "rank", sql: "SELECT id, subject, jev_prob(OBJECT_CONSTRUCT(t.*),\n       'the customer is angry') AS p\nFROM tickets t ORDER BY p DESC;" },
+    { db: "SQL Server", mode: "where", sql: "SELECT * FROM dbo.tickets AS t\nWHERE jev.prob((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n               N'the customer is angry') >= 0.5;" },
+    { db: "Databricks", mode: "rank", sql: "SELECT id, subject, jev_prob(to_json(struct(*)),\n       'the customer is angry') AS p\nFROM tickets ORDER BY p DESC;" },
+  ];
+  const sqlEl = $("#sql"), res = $("#result"), dialect = $("#dialect");
+  function table() {
+    res.innerHTML = `<div class="row head"><span>id</span><span>subject</span><span class="body">body</span><span>jev_prob</span></div>` +
+      TICKETS.map(([id, s, b]) => `<div class="row" data-id="${id}"><span class="id">${id}</span><span>${s}</span><span class="body">${b}</span>
+        <div class="pbar"><i></i><b></b></div></div>`).join("") + `<div class="foot" id="rfoot"></div>`;
+  }
+  async function type(text) {
+    if (reduce) { sqlEl.innerHTML = hl(text); return; }
+    for (let i = 0; i <= text.length; i += 2) { sqlEl.innerHTML = hl(text.slice(0, i)) + '<span class="caret"></span>'; await sleep(16); }
+    sqlEl.innerHTML = hl(text) + '<span class="caret"></span>';
+  }
+  function setBar(row, p) {
+    const bar = row.querySelector(".pbar"); bar.classList.toggle("yes", p >= .5);
+    bar.querySelector("i").style.width = Math.max(p * 100, 2) + "%";
+    const b = bar.querySelector("b"); let t0 = null;
+    if (reduce) { b.textContent = p.toFixed(3); return; }
+    const step = ts => { t0 ??= ts; const k = Math.min(1, (ts - t0) / 450); b.textContent = (p * k).toFixed(3); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+  async function scene(sc) {
+    dialect.style.opacity = 0; await sleep(200); dialect.textContent = sc.db; dialect.style.opacity = 1;
+    table(); await type(sc.sql); await sleep(300);
+    const rows = [...res.querySelectorAll(".row[data-id]")], o = owls.hero;
+    heroBusy = true;
+    // one forward pass: Rowl reads the batch, then every answer arrives
+    for (const r of rows) {
+      r.classList.add("scan");
+      const b = r.getBoundingClientRect(); look(o, b.left + b.width / 2, b.top + b.height / 2);
+      await sleep(95); r.classList.remove("scan");
+    }
+    once(o, "chew", 520); once(o, "nod", 520);
+    await sleep(250);
+    rows.forEach((r, i) => setTimeout(() => setBar(r, TICKETS[i][3]), reduce ? 0 : i * 45));
+    await sleep(700);
+    const foot = $("#rfoot");
+    if (sc.mode === "where") {
+      rows.forEach((r, i) => { if (TICKETS[i][3] >= .5) r.classList.add("yes"); });
+      await sleep(500);
+      rows.forEach((r, i) => { if (TICKETS[i][3] < .5) r.classList.add("gone"); });
+      foot.textContent = "4 rows. All 8 judged in one forward pass; run it again and every answer comes from the cache.";
+    } else {
+      // FLIP: re-sort rows by probability
+      const first = new Map(rows.map(r => [r, r.getBoundingClientRect().top]));
+      const sorted = rows.slice().sort((a, b) => TICKETS[b.dataset.id - 1][3] - TICKETS[a.dataset.id - 1][3]);
+      sorted.forEach(r => res.insertBefore(r, foot));
+      if (!reduce) sorted.forEach(r => {
+        const dy = first.get(r) - r.getBoundingClientRect().top;
+        r.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" });
+      });
+      sorted.slice(0, 4).forEach(r => r.classList.add("yes"));
+      foot.textContent = "8 rows, most likely first. Changing the threshold or the sort order costs nothing: answers are cached.";
+    }
+    once(o, "flap", 950);
+    heroBusy = false; look(o);
+  }
+  (async () => {
+    if (reduce) { await scene(SCENES[0]); return; }
+    for (let i = 0; ; i = (i + 1) % SCENES.length) { await scene(SCENES[i]); await sleep(3600); }
+  })();
+
+  // ------------------------------------------------ database tabs
+  const DBS = [
+    ["SQL Server", "2016 and later, Azure SQL", "jev.judge sends new rows to the gateway in batches of 500 (or run sql-jev-laya judge-sqlserver from outside); jev.prob reads the stored answer with an index seek.",
+      "EXEC jev.judge N'dbo.tickets', N'the customer is angry';\n\nSELECT * FROM dbo.tickets AS t\nWHERE jev.prob((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n               N'the customer is angry') >= 0.5;\n\nSELECT jev.choice((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n                  N'which team?', N'[\"billing\",\"technical\",\"sales\"]') AS team\nFROM dbo.tickets AS t;"],
+    ["Snowflake", "Laya inside Snowpark Container Services", "Service functions receive up to 1,000 rows per call; Laya runs on a GPU compute pool, so rows never leave your account.",
+      "SELECT * FROM tickets t\nWHERE jev(OBJECT_CONSTRUCT(t.*), 'the customer is angry');\n\nSELECT jev_choice(OBJECT_CONSTRUCT(t.*), 'which team should handle this?',\n                  ['billing', 'technical', 'sales']) AS team, COUNT(*)\nFROM tickets t GROUP BY team;"],
+    ["Databricks", "and any Spark", "pandas UDFs get Arrow batches of 10,000 rows; Laya runs on every executor, one model load per worker.",
+      "# in a notebook cell\nimport sqljev.spark\nsqljev.spark.register(spark, device='cuda')\n\nSELECT * FROM support.tickets\nWHERE jev(to_json(struct(subject, body)), 'the customer is angry');"],
+    ["BigQuery", "remote functions on Cloud Run", "BigQuery batches rows into each remote-function call (max_batching_rows); the gateway answers the whole batch at once.",
+      "SELECT * FROM `proj.support.tickets` t\nWHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');\n\nSELECT jev.jev_choice(TO_JSON_STRING(t), 'which team?',\n                      '[\"billing\",\"technical\",\"sales\"]') AS team\nFROM `proj.support.tickets` t;"],
+    ["Redshift", "Lambda UDFs", "Redshift sends row batches to a tiny stdlib-only Lambda that forwards them to your gateway.",
+      "SELECT * FROM tickets\nWHERE jev(JSON_SERIALIZE(OBJECT('subject', subject, 'body', body)),\n          'the customer is angry');"],
+    ["DuckDB", "and the sql-jev-laya CLI for anything else", "Arrow UDFs see 2,048 rows at a time. The CLI does the same for Postgres, MySQL, Oracle and any SQLAlchemy URL.",
+      "import duckdb, sqljev.duckdb\ncon = duckdb.connect('support.duckdb')\nsqljev.duckdb.register(con)\n\nSELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry');\n\n# any other database, from the shell:\n# sql-jev-laya query \"$DB_URL\" \"SELECT * FROM tickets\" --where \"the customer is angry\""],
+  ];
+  const tabs = $("#tabs"); let typing = 0;
+  DBS.forEach(([name, sub], i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.id = "tab" + i; b.setAttribute("aria-controls", "dbpanel");
+    b.innerHTML = `${name}<small>${sub}</small>`;
+    b.addEventListener("click", () => show(i));
+    b.addEventListener("keydown", e => {
+      const k = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+      if (k) { e.preventDefault(); const j = (i + k + DBS.length) % DBS.length; show(j); $("#tab" + j).focus(); }
+    });
+    tabs.appendChild(b);
+  });
+  async function show(i) {
+    const run = ++typing;
+    tabs.querySelectorAll(".tab").forEach((t, j) => { t.setAttribute("aria-selected", i === j); t.tabIndex = i === j ? 0 : -1; });
+    $("#dbpanel").setAttribute("aria-labelledby", "tab" + i);
+    $("#dbhow").textContent = DBS[i][2];
+    const text = DBS[i][3], pre = $("#dbsql");
+    once(owls.peek, "nod", 520);
+    if (reduce) { pre.innerHTML = hl(text); return; }
+    for (let n = 0; n <= text.length; n += 4) { if (run !== typing) return; pre.innerHTML = hl(text.slice(0, n)); await sleep(8); }
+    pre.innerHTML = hl(text);
+  }
+  show(0);
+
+  // ------------------------------------------------ pipeline
+  const pipe = $("#pipe"), out = $("#out"), count = $("#count");
+  let pipeOn = false, rowsIn = 0, judged = 0, batch = [];
+  function chip(kind) {
+    const c = document.createElement("div"); c.className = "chip " + kind; c.innerHTML = "<i></i><i></i>"; pipe.appendChild(c); return c;
+  }
+  const W = () => pipe.clientWidth;
+  function move(el, frames, ms) { return el.animate(frames, { duration: ms, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }).finished; }
+  function answer(yes) {
+    const a = document.createElement("div"); a.className = "ans"; a.style.background = yes ? "var(--moss)" : "var(--plum)";
+    a.style.width = (yes ? 70 : 24) + "px"; out.prepend(a);
+    a.animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 400, easing: "ease-out" });
+    while (out.children.length > 8) out.lastChild.remove();
+  }
+  async function flow() {
+    const r = Math.random(), kind = r < .22 ? "dup" : r < .45 ? "hot" : "new";
+    const c = chip(kind === "new" ? "" : kind); rowsIn++;
+    await move(c, [{ transform: "translateX(-60px)" }, { transform: `translateX(${W() * .24 - 60}px)` }], 1100);
+    if (kind === "dup") {
+      await move(c, [{ transform: `translateX(${W() * .24 - 60}px)`, opacity: 1 }, { transform: `translateX(${W() * .24 - 20}px) scale(.3)`, opacity: 0 }], 450);
+      c.remove(); tally(); return;
+    }
+    await move(c, [{ transform: `translateX(${W() * .24 - 60}px)` }, { transform: `translateX(${W() * .44 - 60}px)` }], 900);
+    if (kind === "hot") {
+      await move(c, [{ transform: `translateX(${W() * .44 - 60}px)` }, { transform: `translateX(${W() * .46}px) translateY(130px)` }, { transform: `translateX(${W() * .9}px) translateY(130px)`, opacity: 0 }], 1500);
+      c.remove(); answer(Math.random() < .5); tally(); return;
+    }
+    const slot = batch.length;
+    await move(c, [{ transform: `translateX(${W() * .44 - 60}px)` }, { transform: `translateX(${W() * .62 - 64}px) translateY(${-54 + slot * 34}px)` }], 900);
+    batch.push(c);
+    if (batch.length === 4) {
+      const b = batch; batch = [];
+      await Promise.all(b.map((x, i) => move(x, [{ transform: `translateX(${W() * .62 - 64}px) translateY(${-54 + i * 34}px)` },
+        { transform: `translateX(${W() * .77}px) translateY(-10px) scale(.2)`, opacity: 0 }], 650)));
+      b.forEach(x => x.remove()); judged += 4;
+      once(owls.pipe, "chew", 520); once(owls.pipe, "nod", 520);
+      for (let i = 0; i < 4; i++) { answer(Math.random() < .45); await sleep(90); }
+      tally();
+    }
+  }
+  function tally() { count.textContent = `${rowsIn} rows in, ${judged} judged by the model`; }
+  async function pipeLoop() {
+    while (pipeOn) { flow(); await sleep(520); }
+  }
+
+  // ------------------------------------------------ functions grid (illustrative)
+  const FROWS = [
+    ["Refund please, charged twice", 1, .87, "billing", 2],
+    ["Can't log in after update", 0, .21, "technical", 3],
+    ["Suspicious login from abroad", 0, .64, "security", 4],
+    ["Pricing for 200 seats?", 0, .02, "sales", 1],
+    ["This is the third outage. Furious.", 1, .98, "technical", 4],
+  ];
+  $("#fbody").innerHTML = FROWS.map(([s, y, p, c, sc], i) => `<tr>
+    <td>${s}</td>
+    <td><span class="cell" style="transition-delay:${i * .12}s"><svg class="tick ${y ? "y" : "n"}" viewBox="0 0 26 26">${y ? '<path d="M5 14 L11 20 L21 7"/>' : '<path d="M7 7 L19 19 M19 7 L7 19"/>'}</svg>${y ? "true" : "false"}</span></td>
+    <td><span class="cell mini" style="transition-delay:${i * .12 + .1}s"><span class="pbar ${p >= .5 ? "yes" : ""}" style="width:110px"><i data-w="${p * 100}"></i><b>${p.toFixed(2)}</b></span></span></td>
+    <td><span class="cell" style="transition-delay:${i * .12 + .2}s"><span class="pill ${c}">${c}</span></span></td>
+    <td><span class="cell" style="transition-delay:${i * .12 + .3}s"><span class="dots" data-n="${sc}"><i></i><i></i><i></i><i></i></span>${((sc - 1) / 3).toFixed(2)}</span></td>
+  </tr>`).join("");
+  function fillGrid() {
+    const g = $("#fgrid"); g.classList.add("on");
+    g.querySelectorAll(".pbar i").forEach((i, k) => setTimeout(() => i.style.width = i.dataset.w + "%", reduce ? 0 : 400 + k * 120));
+    g.querySelectorAll(".dots").forEach((d, k) => [...d.children].forEach((i, j) => setTimeout(() => { if (j < +d.dataset.n) i.classList.add("f"); }, reduce ? 0 : 700 + k * 120 + j * 110)));
+  }
+
+  // ------------------------------------------------ fine-tune ring
+  const dot = $("#dot"), stations = [...document.querySelectorAll(".station")], acc = $("#acc");
+  let ringOn = false, ringT = 0, laps = 0, lastTs = null;
+  const ACC = [.362, .58, .69, .766];
+  function ring(ts) {
+    if (!ringOn) { lastTs = null; return; }
+    lastTs ??= ts; ringT += (ts - lastTs) / 7000; lastTs = ts;
+    if (ringT >= 1) { ringT -= 1; laps++; const v = ACC[Math.min(laps, ACC.length - 1)]; acc.textContent = v.toFixed(3);
+      if (laps >= ACC.length - 1) owls.grad.classList.add("graduated"); once(owls.grad, "flap", 950); }
+    const a = ringT * Math.PI * 2 - Math.PI / 2;
+    dot.style.left = (50 + 42 * Math.cos(a)) + "%"; dot.style.top = (50 + 42 * Math.sin(a)) + "%";
+    const idx = Math.round(ringT * 4) % 4; stations.forEach((s, i) => s.classList.toggle("lit", i === idx));
+    requestAnimationFrame(ring);
+  }
+
+  // ------------------------------------------------ start things when they scroll into view
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    const id = e.target.id;
+    if (id === "pipe") { pipeOn = e.isIntersecting && !reduce; if (pipeOn) pipeLoop(); if (reduce) { rowsIn = 12; judged = 4; tally(); } }
+    if (id === "fgrid" && e.isIntersecting) fillGrid();
+    if (id === "vs" && e.isIntersecting) e.target.querySelectorAll(".fill").forEach(f => f.style.width = f.dataset.w + "%");
+    if (id === "ring") {
+      ringOn = e.isIntersecting && !reduce;
+      if (ringOn) requestAnimationFrame(ring);
+      if (reduce) { acc.textContent = "0.766"; owls.grad.classList.add("graduated"); }
+    }
+  }), { threshold: .25 });
+  ["pipe", "fgrid", "vs", "ring"].forEach(id => io.observe(document.getElementById(id)));
+})();
+</script>
+</body>
+</html>
