@@ -1,11 +1,28 @@
 <p align="center">
-  <img src="site/assets/rowl.svg" alt="Rowl, the sqljev owl, reading a table row" width="160">
+  <a href="https://singhpratech.github.io/sqljev/"><img src="https://raw.githubusercontent.com/singhpratech/sqljev/main/site/assets/banner.png" alt="sqljev: ask your SQL rows questions in plain English, answered by Laya" width="100%"></a>
 </p>
 
-# sqljev — ask your SQL rows questions in plain language, answered by Laya
+<p align="center">
+  <a href="https://pypi.org/project/sqljev/"><img src="https://img.shields.io/pypi/v/sqljev?color=F0A202&label=pypi" alt="PyPI"></a>
+  <a href="https://pypi.org/project/sqljev/"><img src="https://img.shields.io/pypi/pyversions/sqljev?color=152238" alt="Python"></a>
+  <a href="https://github.com/singhpratech/sqljev/actions/workflows/ci.yml"><img src="https://github.com/singhpratech/sqljev/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/singhpratech/sqljev/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-2F8F5B" alt="License"></a>
+  <a href="https://colab.research.google.com/github/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"></a>
+</p>
 
-Write the condition the way you would say it. Your database does the rest, on **SQL Server, PostgreSQL,
-MySQL / MariaDB, Snowflake, Databricks, BigQuery, Redshift, DuckDB** and anything SQLAlchemy can reach.
+<p align="center">
+  <a href="https://singhpratech.github.io/sqljev/"><b>Website</b></a> &nbsp;·&nbsp;
+  <a href="#quickstart">Quickstart</a> &nbsp;·&nbsp;
+  <a href="#per-database">Databases</a> &nbsp;·&nbsp;
+  <a href="#benchmark-100000-rows-13-questions">Benchmark</a> &nbsp;·&nbsp;
+  <a href="#fine-tune-laya-on-your-own-tables">Fine-tune</a>
+</p>
+
+# sqljev
+
+**Ask your SQL rows questions in plain English.** Write the condition the way you would say it, and your
+database does the rest, on **SQL Server, PostgreSQL, MySQL / MariaDB, Snowflake, Databricks, BigQuery, Redshift,
+DuckDB** and anything SQLAlchemy can reach.
 
 ```sql
 -- Snowflake / Databricks / DuckDB / BigQuery / Redshift: the row goes in as JSON
@@ -32,6 +49,16 @@ your own tables**. TypeSafe's hosted [Jev](https://docs.typesafe.ai) is one sett
 
 Inspired by, and partly ported from, [pg-jev](https://github.com/realZachi/pg-jev), which does this inside
 PostgreSQL. sqljev takes the idea to every other database and swaps in an open model you can train.
+
+## Quickstart
+
+```bash
+pip install "sqljev[laya,db]"
+sqljev query "sqlite:///support.db" "SELECT * FROM tickets" --where "the customer is angry" --limit 10
+```
+
+That downloads Laya once (~1.7 GB), judges the rows on your machine, and prints the angry tickets with their
+probability. Then pick your database below, or open the [website](https://singhpratech.github.io/sqljev/) for copy-paste setup per database.
 
 ## What it is for
 
@@ -153,7 +180,7 @@ Measured on the built-in pharma demo (*"the adverse event was serious"*, 3,000 t
 **69.4% → 100% after 2 minutes** of training on an RTX 4090 Laptop GPU (`--train-layers 12`, 3 epochs). The demo
 reports come from templates and are easy to learn; expect a smaller jump on real data, and measure it the same way.
 
-**No terminal?** Open [`notebooks/sqljev_finetune_colab.ipynb`](notebooks/sqljev_finetune_colab.ipynb) in
+**No terminal?** Open [`notebooks/sqljev_finetune_colab.ipynb`](https://github.com/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb) in
 [Colab](https://colab.research.google.com/github/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb),
 pick a question (or the built-in pharma demo) and press *Run all*: it measures, fine-tunes, measures again and
 publishes. The training loop follows Laya's own fine-tuning notebook (proper-scoring-rule policy gradient plus
@@ -188,7 +215,7 @@ sqljev materialize "$DB_URL" "SELECT id, subject, body FROM tickets" --key id \
 
 <details><summary><b>SQL Server / Azure SQL</b></summary>
 
-Run [`sql/sqlserver/install.sql`](sql/sqlserver/install.sql). It creates schema `jev` with `jev.judge`,
+Run [`sql/sqlserver/install.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/sqlserver/install.sql). It creates schema `jev` with `jev.judge`,
 `jev.prob`, `jev.matches`, `jev.choice`, `jev.score`, `jev.score_norm`, `jev.eval`, `jev.answers_for`
 (set-based join) and `jev.forget`.
 
@@ -206,7 +233,7 @@ on the next `jev.judge` run, and unchanged rows are skipped.
 
 <details><summary><b>PostgreSQL</b> (RDS, Aurora, Cloud SQL, AlloyDB, Azure, Supabase, Neon, ...)</summary>
 
-Run [`sql/postgres/install.sql`](sql/postgres/install.sql): no extension, no superuser. Judge once, then read
+Run [`sql/postgres/install.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/postgres/install.sql): no extension, no superuser. Judge once, then read
 with ordinary functions:
 
 ```bash
@@ -224,7 +251,7 @@ with `plpython3u` can also run [pg-jev](https://github.com/realZachi/pg-jev) on 
 
 <details><summary><b>MySQL / MariaDB</b> (RDS, Aurora, Cloud SQL, Azure)</summary>
 
-Run [`sql/mysql/install.sql`](sql/mysql/install.sql) (stored functions and a `jev_answers` table), then:
+Run [`sql/mysql/install.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/mysql/install.sql) (stored functions and a `jev_answers` table), then:
 
 ```bash
 sqljev judge "mysql+pymysql://..." --source tickets --prob "the customer is angry"
@@ -238,9 +265,9 @@ WHERE jev_prob(JSON_OBJECT('id', t.id, 'subject', t.subject, 'body', t.body), 't
 
 <details><summary><b>Snowflake</b></summary>
 
-- [`sql/snowflake/install_spcs.sql`](sql/snowflake/install_spcs.sql): **Laya inside Snowflake** on Snowpark
+- [`sql/snowflake/install_spcs.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/snowflake/install_spcs.sql): **Laya inside Snowflake** on Snowpark
   Container Services (GPU). Rows never leave your account; service functions batch up to 1,000 rows per call.
-- [`sql/snowflake/install_udf.sql`](sql/snowflake/install_udf.sql): a vectorized Python UDF (engine inlined)
+- [`sql/snowflake/install_udf.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/snowflake/install_udf.sql): a vectorized Python UDF (engine inlined)
   calling your gateway or Jev through an External Access Integration.
 
 ```sql
@@ -257,13 +284,13 @@ sqljev.spark.register(spark, device="cuda")      # Laya on every executor (or ba
 ```sql
 SELECT * FROM tickets WHERE jev(to_json(struct(subject, body)), 'the customer is angry');
 ```
-See [`sql/databricks/README.md`](sql/databricks/README.md).
+See [`sql/databricks/README.md`](https://github.com/singhpratech/sqljev/blob/main/sql/databricks/README.md).
 </details>
 
 <details><summary><b>BigQuery</b></summary>
 
 Remote functions backed by the gateway on Cloud Run (GPU optional):
-[`sql/bigquery/install.sql`](sql/bigquery/install.sql), [`deploy/cloudrun`](deploy/cloudrun/README.md).
+[`sql/bigquery/install.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/bigquery/install.sql), [`deploy/cloudrun`](https://github.com/singhpratech/sqljev/blob/main/deploy/cloudrun/README.md).
 ```sql
 SELECT * FROM `proj.support.tickets` t WHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');
 ```
@@ -272,7 +299,7 @@ SELECT * FROM `proj.support.tickets` t WHERE jev.jev(TO_JSON_STRING(t), 'the cus
 <details><summary><b>Amazon Redshift</b></summary>
 
 Lambda UDFs (`sqljev.aws_lambda.handler`, stdlib-only zip) forwarding to a gateway:
-[`sql/redshift/install.sql`](sql/redshift/install.sql), [`deploy/lambda`](deploy/lambda/README.md).
+[`sql/redshift/install.sql`](https://github.com/singhpratech/sqljev/blob/main/sql/redshift/install.sql), [`deploy/lambda`](https://github.com/singhpratech/sqljev/blob/main/deploy/lambda/README.md).
 </details>
 
 <details><summary><b>DuckDB</b></summary>
@@ -364,10 +391,10 @@ Releasing is one command, `scripts/release.sh 0.1.0`: it dates the CHANGELOG ent
 pushes. GitHub Actions then builds the package, creates the GitHub Release with the wheel and every database's
 install scripts attached, and publishes to PyPI once `PYPI_PUBLISH` is enabled.
 
-See [AGENTS.md](AGENTS.md) for the architecture.
+See [AGENTS.md](https://github.com/singhpratech/sqljev/blob/main/AGENTS.md) for the architecture.
 
 ## License
 
 Apache 2.0. Parts ported from [pg-jev](https://github.com/realZachi/pg-jev) (PostgreSQL License); see
-[NOTICE](NOTICE). Laya is by Convai Innovations (Apache 2.0). Jev and TypeSafe are trademarks of their
+[NOTICE](https://github.com/singhpratech/sqljev/blob/main/NOTICE). Laya is by Convai Innovations (Apache 2.0). Jev and TypeSafe are trademarks of their
 respective owners; this project is not affiliated with TypeSafe or Convai Innovations.

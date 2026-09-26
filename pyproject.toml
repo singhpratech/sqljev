@@ -5,14 +5,23 @@ build-backend = "hatchling.build"
 [project]
 name = "sqljev"
 dynamic = ["version"]
-description = "Ask your SQL rows questions in plain language: jev(), jev_prob(), jev_choice(), jev_score() for SQL Server, Snowflake, Databricks, BigQuery, Redshift, DuckDB and any SQLAlchemy database, answered by Laya (open weights) or TypeSafe Jev."
+description = "Ask your SQL rows questions in plain English: jev(), jev_prob(), jev_choice(), jev_score() for SQL Server, PostgreSQL, MySQL, Snowflake, Databricks, BigQuery, Redshift and DuckDB, answered by Laya (open weights, fine-tunable) or TypeSafe Jev."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-keywords = ["sql", "laya", "jev", "llm", "snowflake", "databricks", "sql-server", "bigquery", "redshift", "duckdb"]
+keywords = ["sql", "laya", "jev", "pg-jev", "text-classification", "snowflake", "databricks", "sql-server", "postgresql", "mysql", "bigquery", "redshift", "duckdb", "fine-tuning"]
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: SQL",
   "Topic :: Database",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -30,10 +39,17 @@ dev = ["pytest>=8", "sqlalchemy>=2.0", "duckdb>=1.1", "pyarrow>=14", "pandas>=1.
 sqljev = "sqljev.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/singhpratech/sqljev"
+Homepage = "https://singhpratech.github.io/sqljev/"
+Source = "https://github.com/singhpratech/sqljev"
+Issues = "https://github.com/singhpratech/sqljev/issues"
+Changelog = "https://github.com/singhpratech/sqljev/blob/main/CHANGELOG.md"
+"Fine-tune in Colab" = "https://colab.research.google.com/github/singhpratech/sqljev/blob/main/notebooks/sqljev_finetune_colab.ipynb"
 
 [tool.hatch.version]
 path = "src/sqljev/core.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/private", "/bench/*.duckdb", "/bench/results", "/site/banner.html", "/.github"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sqljev"]
