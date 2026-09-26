@@ -2,7 +2,7 @@
 
 Guidance for AI coding agents working in this repository.
 
-sql-jev-laya adds plain-language predicates (`jev`, `jev_prob`, `jev_choice`, `jev_score`, ...) to SQL Server,
+sqljev adds plain-language predicates (`jev`, `jev_prob`, `jev_choice`, `jev_score`, ...) to SQL Server,
 Snowflake, Databricks/Spark, BigQuery, Redshift, DuckDB and any SQLAlchemy database. Rows are judged by a
 System One decision model: Laya (open weights, default) or TypeSafe Jev.
 
@@ -11,7 +11,7 @@ System One decision model: Laya (open weights, default) or TypeSafe Jev.
 - `src/sqljev/core.py`: **the engine; one stdlib-only module** (it is inlined into the Snowflake UDF).
   `Jev.evaluate` (batch), `Jev.evaluate_iter` (streaming, bounded read-ahead), `Jev.call(fn, calls)` (the UDF
   dispatch every adapter uses), the four backends, the answer cache, the spend guard, HTTP pooling/retries.
-  `laya_question()` is the single source of the Laya prompt; `sql-jev-laya dataset` uses it too, so training data
+  `laya_question()` is the single source of the Laya prompt; `sqljev dataset` uses it too, so training data
   matches inference. Never import third-party packages at module level here.
 - `src/sqljev/gateway.py`: stdlib HTTP server; one route per database batch protocol, all ending in `engine.call`.
 - `src/sqljev/{duckdb,spark,aws_lambda}.py`: adapters. `cli.py`: query / materialize / dataset / eval /

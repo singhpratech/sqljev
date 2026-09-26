@@ -1,4 +1,4 @@
--- sql-jev-laya for BigQuery, as remote functions backed by a sql-jev-laya gateway on Cloud Run.
+-- sqljev for BigQuery, as remote functions backed by a sqljev gateway on Cloud Run.
 -- BigQuery batches rows into each call (max_batching_rows); the gateway answers a batch in shared forward passes.
 --
 --   SELECT * FROM `proj.support.tickets` t WHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');

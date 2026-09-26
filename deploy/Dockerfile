@@ -1,7 +1,7 @@
-# sql-jev-laya gateway with Laya in-process. Serves SQL Server, Snowflake (SPCS), BigQuery (Cloud Run), Redshift.
-#   docker build -f deploy/Dockerfile -t sql-jev-laya .                                   # CPU
-#   docker build -f deploy/Dockerfile --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124 -t sql-jev-laya:gpu .
-#   docker run -p 8765:8765 -e SQLJEV_GATEWAY_TOKEN=... sql-jev-laya
+# sqljev gateway with Laya in-process. Serves SQL Server, Snowflake (SPCS), BigQuery (Cloud Run), Redshift.
+#   docker build -f deploy/Dockerfile -t sqljev .                                   # CPU
+#   docker build -f deploy/Dockerfile --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124 -t sqljev:gpu .
+#   docker run -p 8765:8765 -e SQLJEV_GATEWAY_TOKEN=... sqljev
 FROM python:3.12-slim
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
 ARG MODEL=convaiinnovations/laya
@@ -15,4 +15,4 @@ RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(
 ENV SQLJEV_BACKEND=local HF_HUB_OFFLINE=1
 EXPOSE 8765
 HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"
-CMD ["sql-jev-laya", "gateway", "--host", "0.0.0.0", "--port", "8765"]
+CMD ["sqljev", "gateway", "--host", "0.0.0.0", "--port", "8765"]

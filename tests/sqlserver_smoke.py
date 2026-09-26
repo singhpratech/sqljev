@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SQL Server smoke test: install sql/sqlserver/install.sql, judge a table with `sql-jev-laya judge-sqlserver`
+"""SQL Server smoke test: install sql/sqlserver/install.sql, judge a table with `sqljev judge-sqlserver`
 against the mock model, and read answers back through jev.prob / jev.matches / jev.choice / jev.answers_for.
 
     SQLJEV_TEST_MSSQL="mssql+pymssql://sa:pw@127.0.0.1:1433/master" python tests/sqlserver_smoke.py

@@ -1,11 +1,11 @@
--- sql-jev-laya for Snowflake with Laya running INSIDE Snowflake (Snowpark Container Services, GPU).
+-- sqljev for Snowflake with Laya running INSIDE Snowflake (Snowpark Container Services, GPU).
 -- Rows never leave your Snowflake account, and Snowflake batches rows into each service-function call.
 --
 --   SELECT * FROM tickets t WHERE jev(OBJECT_CONSTRUCT(t.*), 'the customer is angry');
 --
 -- 1. Build and push the gateway image with the checkpoint baked in (no egress needed at runtime):
 --      docker build -f deploy/Dockerfile --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124 \
---                   -t <org>-<account>.registry.snowflakecomputing.com/sqljev/public/sqljev_repo/sql-jev-laya:0.1.0 .
+--                   -t <org>-<account>.registry.snowflakecomputing.com/sqljev/public/sqljev_repo/sqljev:0.1.0 .
 --      docker push  <same tag>
 --    To serve a fine-tuned checkpoint, bake it in with --build-arg MODEL=<hub id> and set SQLJEV_MODEL below.
 -- 2. Run this script.
@@ -27,7 +27,7 @@ CREATE SERVICE IF NOT EXISTS sqljev_service
 spec:
   containers:
   - name: gateway
-    image: /sqljev/public/sqljev_repo/sql-jev-laya:0.1.0
+    image: /sqljev/public/sqljev_repo/sqljev:0.1.0
     env:
       SQLJEV_BACKEND: local
       SQLJEV_DEVICE: cuda

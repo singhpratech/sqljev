@@ -1,4 +1,4 @@
-"""AWS Lambda handler for Redshift Lambda UDFs (CREATE EXTERNAL FUNCTION ... LAMBDA 'sql-jev-laya').
+"""AWS Lambda handler for Redshift Lambda UDFs (CREATE EXTERNAL FUNCTION ... LAMBDA 'sqljev').
 
 Handler: sqljev.aws_lambda.handler. Configure with SQLJEV_* environment variables on the function, e.g.
 SQLJEV_BACKEND=gateway + SQLJEV_API_URL=https://your-gateway/v1/eval, or SQLJEV_BACKEND=jev + TYPESAFE_API_KEY.

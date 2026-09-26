@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="site/assets/rowl.svg" alt="Rowl, the sql-jev-laya owl, reading a table row" width="160">
+  <img src="site/assets/rowl.svg" alt="Rowl, the sqljev owl, reading a table row" width="160">
 </p>
 
-# sql-jev-laya — ask your SQL rows questions in plain language
+# sqljev — ask your SQL rows questions in plain language, answered by Laya
 
 Write the condition the way you would say it. Your database does the rest, on **SQL Server, Snowflake,
 Databricks, BigQuery, Redshift, DuckDB** and anything SQLAlchemy can reach.
@@ -31,7 +31,7 @@ calibrated probabilities for typed questions (yes/no, choice, score). By default
 your own tables**. TypeSafe's hosted [Jev](https://docs.typesafe.ai) is one setting away.
 
 Inspired by, and partly ported from, [pg-jev](https://github.com/realZachi/pg-jev), which does this inside
-PostgreSQL. sql-jev-laya takes the idea to every other database and swaps in an open model you can train.
+PostgreSQL. sqljev takes the idea to every other database and swaps in an open model you can train.
 
 ## What it is for
 
@@ -51,7 +51,7 @@ joins, `GROUP BY`, `LIMIT`. Keep arithmetic, dates and exact matches in SQL; let
 ## How it works
 
 ```
- your SQL ──► database UDF / procedure ──► sql-jev-laya engine ──► Laya (in-process, GPU/CPU)
+ your SQL ──► database UDF / procedure ──► sqljev engine ──► Laya (in-process, GPU/CPU)
              (rows arrive in batches)      dedupe · cache ·    or a gateway, laya-serve, or Jev
                                            forward-pass batching
 ```
@@ -70,7 +70,7 @@ A SQL question is *one question over many rows*, and everything is organised aro
    pass (`batch_size`, default 64), sorted by length to minimise padding. Measured on CPU (English
    checkpoint): 0.19 s/row batched vs 0.35 s/row one at a time. On a GPU, Laya is ~33 ms for a single
    decision and ~7 ms per decision batched.
-5. **Streaming when it pays.** `sql-jev-laya query --where ... --limit N` judges rows in order with a bounded
+5. **Streaming when it pays.** `sqljev query --where ... --limit N` judges rows in order with a bounded
    read-ahead, so it stops after the first N matches instead of scanning everything.
 
 ### Backends
@@ -78,7 +78,7 @@ A SQL question is *one question over many rows*, and everything is organised aro
 | `backend` | Model | Rows per call | Use it for |
 | --- | --- | --- | --- |
 | `local` (default) | Laya in this process | `batch_size` per forward pass (64) | CLI, DuckDB, Spark/Databricks executors, the gateway itself |
-| `gateway` | a `sql-jev-laya gateway` (which runs Laya) | 256 per HTTP request | SQL Server, Snowflake UDFs, Redshift Lambda, anything remote |
+| `gateway` | a `sqljev gateway` (which runs Laya) | 256 per HTTP request | SQL Server, Snowflake UDFs, Redshift Lambda, anything remote |
 | `laya-serve` | stock `laya-serve` (`POST /v1/systemone`) | 1 (Laya reads one state) | an existing Laya deployment |
 | `jev` | TypeSafe Jev, hosted | 20 in one shared state (pg-jev's measured optimum) | best zero-shot accuracy, if data may leave your network |
 
@@ -96,26 +96,26 @@ A SQL question is *one question over many rows*, and everything is organised aro
 
 *(Figures from Laya's published benchmarks.)* Laya out of the box is good at clear-cut yes/no conditions
 and weaker at fine-grained choices. **Its strength is that you can train it on your data**, and SQL tables
-are full of labels. So sql-jev-laya ships the loop:
+are full of labels. So sqljev ships the loop:
 
 ## Fine-tune Laya on your own tables
 
 ```bash
 # 1. Labelled rows -> training/eval data. The label column is never shown to the model, and the state and
 #    question are built by the same code the runtime uses, so the checkpoint learns exactly what it will be asked.
-sql-jev-laya dataset "$DB_URL" "SELECT subject, body, team FROM tickets WHERE team IS NOT NULL" \
+sqljev dataset "$DB_URL" "SELECT subject, body, team FROM tickets WHERE team IS NOT NULL" \
     --label team --choice "which team should handle this?" --test-fraction 0.2 -o tickets.jsonl
 #    -> tickets.train.jsonl, tickets.test.jsonl   (--format typed-decisions for Laya's fine-tuning notebook)
 
 # 2. Baseline: how does the base model (or Jev) do on YOUR rows?
-sql-jev-laya eval tickets.test.jsonl                         # Laya base
-sql-jev-laya eval tickets.test.jsonl --backend jev           # Jev, for comparison
+sqljev eval tickets.test.jsonl                         # Laya base
+sqljev eval tickets.test.jsonl --backend jev           # Jev, for comparison
 
 # 3. Fine-tune with Laya's notebook (Kaggle, free 2x T4, ~hours):
 #    https://github.com/NandhaKishorM/laya/blob/main/notebooks/laya_finetune_typed_decisions_2xT4_kaggle.ipynb
 # 4. Measure again, then serve it everywhere:
-sql-jev-laya eval tickets.test.jsonl --model ./checkpoints/tickets-laya --min-accuracy 0.85
-SQLJEV_MODEL=./checkpoints/tickets-laya sql-jev-laya gateway --host 0.0.0.0
+sqljev eval tickets.test.jsonl --model ./checkpoints/tickets-laya --min-accuracy 0.85
+SQLJEV_MODEL=./checkpoints/tickets-laya sqljev gateway --host 0.0.0.0
 ```
 
 `laya-evals run tickets.test.jsonl` works on the same files for calibration (ECE) and per-slice reports.
@@ -123,8 +123,8 @@ SQLJEV_MODEL=./checkpoints/tickets-laya sql-jev-laya gateway --host 0.0.0.0
 ## Install
 
 ```bash
-pip install "sql-jev-laya[laya,db]"     # engine + Laya + SQLAlchemy CLI  (Python 3.10+)
-pip install "sql-jev-laya"              # engine, gateway client, Lambda handler only: stdlib, no dependencies
+pip install "sqljev[laya,db]"     # engine + Laya + SQLAlchemy CLI  (Python 3.10+)
+pip install "sqljev"              # engine, gateway client, Lambda handler only: stdlib, no dependencies
 ```
 
 For a GPU, install the matching PyTorch build first. The first use downloads the Laya checkpoint (~1.7 GB)
@@ -135,12 +135,12 @@ from Hugging Face.
 <details open><summary><b>Any database: the CLI</b> (Postgres, MySQL, Oracle, SQL Server, Snowflake, ...)</summary>
 
 ```bash
-sql-jev-laya query "$DB_URL" "SELECT * FROM tickets" --where "the customer is angry" --limit 20
-sql-jev-laya query "$DB_URL" "SELECT * FROM tickets" --rank "the customer is angry" --limit 10 --format csv
-sql-jev-laya query "$DB_URL" "SELECT * FROM tickets" --choice "which team?" --options billing,technical,sales
-sql-jev-laya query "$DB_URL" "SELECT * FROM tickets" --prob "mentions a refund" --columns subject,body
+sqljev query "$DB_URL" "SELECT * FROM tickets" --where "the customer is angry" --limit 20
+sqljev query "$DB_URL" "SELECT * FROM tickets" --rank "the customer is angry" --limit 10 --format csv
+sqljev query "$DB_URL" "SELECT * FROM tickets" --choice "which team?" --options billing,technical,sales
+sqljev query "$DB_URL" "SELECT * FROM tickets" --prob "mentions a refund" --columns subject,body
 # Write judgments back as a table you can join in any database:
-sql-jev-laya materialize "$DB_URL" "SELECT id, subject, body FROM tickets" --key id \
+sqljev materialize "$DB_URL" "SELECT id, subject, body FROM tickets" --key id \
     --prob "the customer is angry" --into ticket_anger
 ```
 </details>
@@ -151,12 +151,12 @@ Run [`sql/sqlserver/install.sql`](sql/sqlserver/install.sql). It creates schema 
 `jev.prob`, `jev.matches`, `jev.choice`, `jev.score`, `jev.score_norm`, `jev.eval`, `jev.answers_for`
 (set-based join) and `jev.forget`.
 
-- **SQL Server 2025 / Azure SQL:** `jev.judge` calls a `sql-jev-laya gateway` through
+- **SQL Server 2025 / Azure SQL:** `jev.judge` calls a `sqljev gateway` through
   `sp_invoke_external_rest_endpoint` (HTTPS on 443, publicly trusted certificate). See the header of the script.
 - **SQL Server 2016–2022**, or no outbound HTTPS: fill the same answer table from outside, and every function
   works the same:
   ```bash
-  sql-jev-laya judge-sqlserver "mssql+pymssql://user:pw@host/db" --source dbo.tickets --prob "the customer is angry"
+  sqljev judge-sqlserver "mssql+pymssql://user:pw@host/db" --source dbo.tickets --prob "the customer is angry"
   ```
 
 Row JSON (`FOR JSON`) and hashes are computed by SQL Server itself, so a row edited later is judged again
@@ -216,13 +216,13 @@ con.sql("SELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry')"
 One small HTTP service that speaks every database's batch protocol and runs Laya in-process:
 
 ```bash
-sql-jev-laya gateway --host 0.0.0.0 --port 8765                 # SQLJEV_GATEWAY_TOKEN=... to require a token
-docker build -f deploy/Dockerfile -t sql-jev-laya .        # checkpoint baked in; CUDA via --build-arg TORCH_INDEX=...
+sqljev gateway --host 0.0.0.0 --port 8765                 # SQLJEV_GATEWAY_TOKEN=... to require a token
+docker build -f deploy/Dockerfile -t sqljev .        # checkpoint baked in; CUDA via --build-arg TORCH_INDEX=...
 ```
 
 | Route | Caller |
 | --- | --- |
-| `POST /v1/eval` | sql-jev-laya clients (`backend=gateway`), Snowflake UDF |
+| `POST /v1/eval` | sqljev clients (`backend=gateway`), Snowflake UDF |
 | `POST /sqlserver` | `jev.judge` via `sp_invoke_external_rest_endpoint` |
 | `POST /snowflake/<fn>` | Snowflake service / external functions |
 | `POST /bigquery` | BigQuery remote functions |
@@ -270,7 +270,7 @@ Environment variables `SQLJEV_<NAME>`, keyword arguments (`Jev(backend="gateway"
   plain-language condition. Filter with cheap SQL first; `LIMIT` and streaming stop early.
 - **Laya reads 512 tokens** (English) or 1,024 (multilingual, up to 8,192 with `max_len`). Wide rows are cut
   off, so send only the columns that matter.
-- **Zero-shot Laya is not Jev.** Measure on your data with `sql-jev-laya eval` before trusting a threshold, and
+- **Zero-shot Laya is not Jev.** Measure on your data with `sqljev eval` before trusting a threshold, and
   fine-tune when it matters.
 - With `backend=jev`, row contents go to a third-party API. Don't use it on data you may not share.
 - Answers can change between checkpoints. Pin `model` when results feed reports.

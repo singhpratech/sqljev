@@ -17,7 +17,7 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
-# Data produced by sql-jev dataset / eval, local databases
+# Data produced by sqljev dataset / eval, local databases
 *.jsonl
 *.db
 *.duckdb

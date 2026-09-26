@@ -1,4 +1,4 @@
--- sql-jev-laya for Amazon Redshift, as Lambda UDFs. Redshift batches rows into each Lambda invocation.
+-- sqljev for Amazon Redshift, as Lambda UDFs. Redshift batches rows into each Lambda invocation.
 --
 --   SELECT * FROM tickets
 --   WHERE jev(JSON_SERIALIZE(OBJECT('subject', subject, 'body', body)), 'the customer is angry');
@@ -10,19 +10,19 @@
 -- Options/levels are a JSON array in a VARCHAR, e.g. '["billing","technical"]'.
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev(varchar(max), varchar(max)) RETURNS boolean STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev_prob(varchar(max), varchar(max)) RETURNS float8 STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev_score(varchar(max), varchar(max), varchar(max)) RETURNS float8 STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev_score_norm(varchar(max), varchar(max), varchar(max)) RETURNS float8 STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev_choice(varchar(max), varchar(max), varchar(max)) RETURNS varchar(256) STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
 
 CREATE OR REPLACE EXTERNAL FUNCTION jev_confidence(varchar(max), varchar(max), varchar(max), varchar(max)) RETURNS float8 STABLE
-LAMBDA 'sql-jev-laya' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';
+LAMBDA 'sqljev' IAM_ROLE 'arn:aws:iam::123456789012:role/redshift-sqljev';

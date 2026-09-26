@@ -13,7 +13,7 @@ Backends (setting `backend`, env SQLJEV_BACKEND):
 
   local       Laya (Convai Innovations, Apache 2.0) in this process via `laya` — `predict_batch` packs
               many rows into shared forward passes. Default. Fastest, free, data never leaves the host.
-  gateway     a `sql-jev-laya gateway` over HTTP (which runs Laya locally) — many rows per request.
+  gateway     a `sqljev gateway` over HTTP (which runs Laya locally) — many rows per request.
               For databases that call out over HTTP: SQL Server, Snowflake, BigQuery, Redshift.
   laya-serve  a stock `laya-serve` over the Jev wire protocol (POST /v1/systemone) — one row per request.
   jev         TypeSafe's hosted Jev (POST /v1/systemone) — 20 rows per request in one shared state.
@@ -84,12 +84,12 @@ def make_config(env=None, **overrides):
             cfg[name] = cast(v)
     for name, v in overrides.items():
         if name not in SETTINGS:
-            raise JevError("sql-jev-laya: unknown setting %r (known: %s)" % (name, ", ".join(sorted(SETTINGS))))
+            raise JevError("sqljev: unknown setting %r (known: %s)" % (name, ", ".join(sorted(SETTINGS))))
         if v is not None:
             cfg[name] = SETTINGS[name](v)
     backend = cfg.get("backend", COMMON_DEFAULTS["backend"])
     if backend not in BACKENDS:
-        raise JevError("sql-jev-laya: unknown backend %r (one of %s)" % (backend, ", ".join(BACKENDS)))
+        raise JevError("sqljev: unknown backend %r (one of %s)" % (backend, ", ".join(BACKENDS)))
     for k, v in {**COMMON_DEFAULTS, **BACKEND_DEFAULTS[backend]}.items():
         cfg.setdefault(k, v)
     if not cfg["api_key"]:
@@ -142,12 +142,12 @@ def parse_options(v):
 
 def check_question(kind, options):
     if kind not in KINDS:
-        raise JevError("sql-jev-laya: unknown kind %r (one of noul, score, choice)" % (kind,))
+        raise JevError("sqljev: unknown kind %r (one of noul, score, choice)" % (kind,))
     opts = parse_options(options)
     if kind == "noul":
         return kind, None
     if not opts or len(opts) < 2:
-        raise JevError("sql-jev-laya: %s needs at least two %s" % (kind, "levels" if kind == "score" else "options"))
+        raise JevError("sqljev: %s needs at least two %s" % (kind, "levels" if kind == "score" else "options"))
     return kind, opts
 
 
@@ -158,7 +158,7 @@ def _clause(text):
 
 
 def laya_question(kind, query, opts):
-    """The question Laya is asked about one SQL row (the row is the state). `sql-jev-laya dataset` builds
+    """The question Laya is asked about one SQL row (the row is the state). `sqljev dataset` builds
     training data with this same function, so a fine-tuned checkpoint sees exactly what it is asked."""
     if kind == "noul":
         # A statement ("the customer is angry") becomes "Is it true that the customer is angry?"; a question
@@ -199,7 +199,7 @@ FUNCTIONS = {
 def function_name(fn):
     name = str(fn).rsplit(".", 1)[-1].strip('`"[] ').lower()
     if name not in FUNCTIONS:
-        raise JevError("sql-jev-laya: unknown function %r (one of %s)" % (fn, ", ".join(FUNCTIONS)))
+        raise JevError("sqljev: unknown function %r (one of %s)" % (fn, ", ".join(FUNCTIONS)))
     return name
 
 
@@ -335,7 +335,7 @@ class Jev:
         groups = {}
         for i, args in enumerate(calls):
             if not lo <= len(args) <= hi:
-                raise JevError("sql-jev-laya: %s takes %d-%d arguments, got %d" % (name, lo, hi, len(args)))
+                raise JevError("sqljev: %s takes %d-%d arguments, got %d" % (name, lo, hi, len(args)))
             row, query = args[0], args[1]
             if row is None or query is None:
                 continue
@@ -448,9 +448,9 @@ class Jev:
         with self._lock:
             rows, chars = self._sent[0] + len(pairs), self._sent[1] + sum(len(t) for _, t in pairs)
             if mr and rows > mr:
-                raise JevError("sql-jev-laya: would send %d rows to the model, above max_rows = %d" % (rows, mr))
+                raise JevError("sqljev: would send %d rows to the model, above max_rows = %d" % (rows, mr))
             if mc and chars > mc:
-                raise JevError("sql-jev-laya: would send %d characters of row data, above max_chars = %d" % (chars, mc))
+                raise JevError("sqljev: would send %d characters of row data, above max_chars = %d" % (chars, mc))
             self._sent = [rows, chars]
 
     def _executor(self):
@@ -483,7 +483,7 @@ class Jev:
             try:
                 import laya
             except ImportError:
-                raise JevError("sql-jev-laya: backend 'local' needs Laya: pip install 'sql-jev-laya[laya]'")
+                raise JevError("sqljev: backend 'local' needs Laya: pip install 'sqljev[laya]'")
             m = self.cfg["model"]
             if m and m not in LAYA_CHECKPOINTS:     # a fine-tuned checkpoint: local directory or Hub id
                 self._laya = ("agent", laya.load(m, device=self.cfg["device"]))
@@ -511,7 +511,7 @@ class Jev:
             self._stats["model_ms"] += (time.time() - t0) * 1000
         return {h: r["answers"]["q"] for (h, _), r in zip(pairs, res)}
 
-    # -- gateway: sql-jev-laya's own batch protocol
+    # -- gateway: sqljev's own batch protocol
 
     def _run_gateway(self, kind, query, opts, pairs):
         body = json.dumps({"kind": kind, "question": query, "options": opts,
@@ -519,7 +519,7 @@ class Jev:
         data = self._post(body)
         answers = data.get("answers") or []
         if len(answers) != len(pairs):
-            raise JevError("sql-jev-laya: gateway returned %d answers for %d rows" % (len(answers), len(pairs)))
+            raise JevError("sqljev: gateway returned %d answers for %d rows" % (len(answers), len(pairs)))
         return {h: a for (h, _), a in zip(pairs, answers)}
 
     # -- /v1/systemone: TypeSafe Jev (20 rows in one state) or laya-serve (one row per request)
@@ -538,7 +538,7 @@ class Jev:
         data = self._post(json.dumps(req).encode())
         answers = data.get("answers") or {}
         if any(i not in answers for i in ids):
-            raise JevError("sql-jev-laya: the model returned %d of %d answers" % (len(answers), len(ids)))
+            raise JevError("sqljev: the model returned %d of %d answers" % (len(answers), len(ids)))
         usage = data.get("usage") or {}
         with self._lock:
             self._stats["input_tokens"] += usage.get("input_tokens", 0)
@@ -576,11 +576,11 @@ class Jev:
     def _post(self, body):
         url = urlsplit(self.cfg["api_url"] or "")
         if url.scheme not in ("http", "https"):
-            raise JevError("sql-jev-laya: api_url %r is not an http(s) URL" % self.cfg["api_url"])
+            raise JevError("sqljev: api_url %r is not an http(s) URL" % self.cfg["api_url"])
         if self.cfg["backend"] == "jev" and not self.cfg["api_key"]:
-            raise JevError("sql-jev-laya: no API key. Set SQLJEV_API_KEY or TYPESAFE_API_KEY.")
+            raise JevError("sqljev: no API key. Set SQLJEV_API_KEY or TYPESAFE_API_KEY.")
         path = (url.path or "/") + ("?" + url.query if url.query else "")
-        headers = {"Content-Type": "application/json", "User-Agent": "sql-jev-laya/" + __version__}
+        headers = {"Content-Type": "application/json", "User-Agent": "sqljev/" + __version__}
         if self.cfg["api_key"]:
             headers["Authorization"] = "Bearer " + self.cfg["api_key"]
         delay, last = 0.5, None
@@ -616,8 +616,8 @@ class Jev:
                 time.sleep(min(wait if wait is not None else delay, 30) + random.random() * 0.25)
                 delay = min(delay * 2, 8)
                 continue
-            raise JevError("sql-jev-laya: %s error %s" % (self.cfg["backend"], last))
-        raise JevError("sql-jev-laya: %s unreachable after retries: %s" % (self.cfg["backend"], last))
+            raise JevError("sqljev: %s error %s" % (self.cfg["backend"], last))
+        raise JevError("sqljev: %s unreachable after retries: %s" % (self.cfg["backend"], last))
 
 
 def _null(v):

@@ -1,13 +1,13 @@
-"""sql-jev-laya command line: plain-language questions over any SQLAlchemy database, the gateway, and the
+"""sqljev command line: plain-language questions over any SQLAlchemy database, the gateway, and the
 fine-tuning loop (dataset -> fine-tune Laya -> eval).
 
-  sql-jev-laya query URL "SELECT * FROM tickets" --where "the customer is angry" --limit 20
-  sql-jev-laya query URL "SELECT * FROM tickets" --rank "the customer is angry" --limit 10
-  sql-jev-laya query URL "SELECT * FROM tickets" --choice "which team?" --options billing,technical,sales
-  sql-jev-laya materialize URL "SELECT id, body FROM tickets" --key id --prob "the customer is angry" --into t_angry
-  sql-jev-laya dataset URL "SELECT * FROM tickets" --label team --choice "which team?" -o tickets.jsonl
-  sql-jev-laya eval tickets.test.jsonl
-  sql-jev-laya gateway --port 8765
+  sqljev query URL "SELECT * FROM tickets" --where "the customer is angry" --limit 20
+  sqljev query URL "SELECT * FROM tickets" --rank "the customer is angry" --limit 10
+  sqljev query URL "SELECT * FROM tickets" --choice "which team?" --options billing,technical,sales
+  sqljev materialize URL "SELECT id, body FROM tickets" --key id --prob "the customer is angry" --into t_angry
+  sqljev dataset URL "SELECT * FROM tickets" --label team --choice "which team?" -o tickets.jsonl
+  sqljev eval tickets.test.jsonl
+  sqljev gateway --port 8765
 """
 import argparse
 import csv
@@ -26,7 +26,7 @@ def _engine(url):
     try:
         import sqlalchemy
     except ImportError:
-        raise JevError("sql-jev-laya: database access needs SQLAlchemy: pip install 'sql-jev-laya[db]'")
+        raise JevError("sqljev: database access needs SQLAlchemy: pip install 'sqljev[db]'")
     return sqlalchemy.create_engine(url)
 
 
@@ -57,7 +57,7 @@ def _question(a, need=True):
     if len(picked) != 1:
         if not need:
             return None
-        raise JevError("sql-jev-laya: give exactly one of --where / --rank / --prob / --choice / --score")
+        raise JevError("sqljev: give exactly one of --where / --rank / --prob / --choice / --score")
     mode, text = picked[0]
     kind = {"choice": "choice", "score": "score"}.get(mode, "noul")
     opts = a.options if kind == "choice" else getattr(a, "levels", None) if kind == "score" else None
@@ -159,7 +159,7 @@ def cmd_materialize(a):
     view = _model_view(a.columns)
     rows = list(stream_rows(a.url, a.sql))
     if rows and a.key not in rows[0]:
-        raise JevError("sql-jev-laya: key column %r is not in the query result" % a.key)
+        raise JevError("sqljev: key column %r is not in the query result" % a.key)
     t0 = time.time()
     answers = jev.evaluate([view(r) for r in rows], text, kind, opts)
     col = "jev_" + ("choice" if kind == "choice" else "score" if kind == "score" else "prob")
@@ -178,7 +178,7 @@ def cmd_materialize(a):
                    for r, ans in zip(rows, answers)]
         for i in range(0, len(payload), 1000):
             conn.execute(table.insert(), payload[i:i + 1000])
-    print("sql-jev-laya: wrote %d rows to %s (%s)" % (len(rows), a.into, col), file=sys.stderr)
+    print("sqljev: wrote %d rows to %s (%s)" % (len(rows), a.into, col), file=sys.stderr)
     _report(jev, t0, a)
 
 
@@ -190,19 +190,19 @@ def _truthy(v):
         return True
     if s in ("0", "false", "f", "no", "n"):
         return False
-    raise JevError("sql-jev-laya: label %r is not a boolean" % (v,))
+    raise JevError("sqljev: label %r is not a boolean" % (v,))
 
 
 def cmd_dataset(a):
-    """Labelled SQL rows -> Laya training/eval data, using exactly the state and question sql-jev-laya asks at
+    """Labelled SQL rows -> Laya training/eval data, using exactly the state and question sqljev asks at
     query time, so a checkpoint fine-tuned on it sees what it will be asked."""
     mode, text, kind, opts = _question(a)
     view = _model_view(a.columns, exclude={a.label})
     rows = list(stream_rows(a.url, a.sql))
     if not rows:
-        raise JevError("sql-jev-laya: the query returned no rows")
+        raise JevError("sqljev: the query returned no rows")
     if a.label not in rows[0]:
-        raise JevError("sql-jev-laya: label column %r is not in the query result" % a.label)
+        raise JevError("sqljev: label column %r is not in the query result" % a.label)
     if kind == "choice" and opts is None:
         opts = sorted({str(r[a.label]) for r in rows if r[a.label] is not None})
         kind, opts = check_question(kind, opts)
@@ -245,12 +245,12 @@ def cmd_dataset(a):
         counts[split] += 1
     for f in outs.values():
         f.close()
-    print("sql-jev-laya: %s%s" % (", ".join("%s %d" % kv for kv in counts.items()),
+    print("sqljev: %s%s" % (", ".join("%s %d" % kv for kv in counts.items()),
                              ", skipped %d (no/unknown label)" % skipped if skipped else ""), file=sys.stderr)
 
 
 def cmd_eval(a):
-    """Accuracy of the configured backend on a laya-evals JSONL file (from `sql-jev-laya dataset`)."""
+    """Accuracy of the configured backend on a laya-evals JSONL file (from `sqljev dataset`)."""
     jev = Jev(**_settings(a))
     groups = {}
     for line in open(a.file):
@@ -310,7 +310,7 @@ def cmd_judge_sqlserver(a):
         name = conn.execute(sa.text("SELECT QUOTENAME(OBJECT_SCHEMA_NAME(OBJECT_ID(:s))) + N'.' + "
                                     "QUOTENAME(OBJECT_NAME(OBJECT_ID(:s)))"), {"s": a.source}).scalar()
         if not name:
-            raise JevError("sql-jev-laya: %r is not a table or view" % a.source)
+            raise JevError("sqljev: %r is not a table or view" % a.source)
         qkey = conn.execute(sa.text("SELECT jev.question_key(:q, :k, :o)"),
                             {"q": text, "k": kind, "o": opts_json}).scalar()
         sql = ("SELECT jev.row_hash(x.j) AS h, x.j FROM (SELECT (SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)"
@@ -325,7 +325,7 @@ def cmd_judge_sqlserver(a):
         for i in range(0, len(rows), 500):
             conn.execute(sa.text("INSERT jev.answers (question_key, row_hash, answer) VALUES (:qk, :h, :a)"),
                          rows[i:i + 500])
-    print("sql-jev-laya: judged %d new rows of %s" % (len(rows), name), file=sys.stderr)
+    print("sqljev: judged %d new rows of %s" % (len(rows), name), file=sys.stderr)
     _report(jev, t0, a)
 
 
@@ -333,7 +333,7 @@ def _report(jev, t0, a):
     if a.stats:
         s = jev.stats()
         s["seconds"] = round(time.time() - t0, 2)
-        print("sql-jev-laya: " + json.dumps(s), file=sys.stderr)
+        print("sqljev: " + json.dumps(s), file=sys.stderr)
 
 
 # ---------------------------------------------------------------- argument parsing
@@ -369,8 +369,8 @@ def _questions(p, dataset=False):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="sql-jev-laya", description="Ask your SQL rows questions in plain language.")
-    p.add_argument("--version", action="version", version="sql-jev-laya " + core.__version__)
+    p = argparse.ArgumentParser(prog="sqljev", description="Ask your SQL rows questions in plain language.")
+    p.add_argument("--version", action="version", version="sqljev " + core.__version__)
     sub = p.add_subparsers(dest="cmd", required=True)
 
     q = sub.add_parser("query", help="run a SELECT and filter / rank / classify its rows")

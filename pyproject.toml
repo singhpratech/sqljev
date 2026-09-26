@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sql-jev-laya"
+name = "sqljev"
 dynamic = ["version"]
 description = "Ask your SQL rows questions in plain language: jev(), jev_prob(), jev_choice(), jev_score() for SQL Server, Snowflake, Databricks, BigQuery, Redshift, DuckDB and any SQLAlchemy database, answered by Laya (open weights) or TypeSafe Jev."
 readme = "README.md"
@@ -23,15 +23,14 @@ laya = ["laya>=0.3.20"]
 db = ["sqlalchemy>=2.0"]
 duckdb = ["duckdb>=1.1", "pyarrow>=14"]
 spark = ["pyspark>=3.4", "pandas>=1.5", "pyarrow>=14"]
-all = ["sql-jev-laya[laya,db,duckdb]"]
+all = ["sqljev[laya,db,duckdb]"]
 dev = ["pytest>=8", "sqlalchemy>=2.0", "duckdb>=1.1", "pyarrow>=14", "pandas>=1.5"]
 
 [project.scripts]
-sql-jev-laya = "sqljev.cli:main"
-sql-jev = "sqljev.cli:main"
+sqljev = "sqljev.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/singhpratech/sql-jev-laya"
+Homepage = "https://github.com/singhpratech/sqljev"
 
 [tool.hatch.version]
 path = "src/sqljev/core.py"

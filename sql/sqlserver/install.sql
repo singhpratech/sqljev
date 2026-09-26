@@ -1,4 +1,4 @@
--- sql-jev-laya for SQL Server / Azure SQL — plain-language questions over your rows.
+-- sqljev for SQL Server / Azure SQL — plain-language questions over your rows.
 --
 --   EXEC jev.judge N'dbo.tickets', N'the customer is angry';              -- judge every row once
 --   SELECT * FROM dbo.tickets AS t
@@ -6,7 +6,7 @@
 --
 -- How it works: T-SQL scalar functions cannot call out, so judging and reading are split.
 --   * jev.judge serialises each row with FOR JSON, skips rows already answered (by content hash), and sends the
---     rest in batches to a sql-jev-laya gateway, which runs Laya and answers a whole batch in shared forward passes.
+--     rest in batches to a sqljev gateway, which runs Laya and answers a whole batch in shared forward passes.
 --     Answers land in jev.answers, keyed by (question, row content).
 --   * jev.prob / jev.matches / jev.choice / jev.score / jev.eval read jev.answers: an index seek per row.
 --   Re-running a question, changing the threshold or sorting by probability is free; a changed row is re-judged.
@@ -15,10 +15,10 @@
 -- Azure SQL Managed Instance) and the gateway on https:// port 443 under a DNS name with a publicly trusted
 -- certificate (Azure SQL Database additionally only allows Azure-hosted endpoints, e.g. *.azurewebsites.net,
 -- *.azurecontainerapps.io). On SQL Server 2016-2022, or without outbound HTTPS, fill
--- the same table from outside:  sql-jev-laya judge-sqlserver "mssql+pyodbc://..." --source dbo.tickets --prob "..."
+-- the same table from outside:  sqljev judge-sqlserver "mssql+pyodbc://..." --source dbo.tickets --prob "..."
 --
 -- Setup:
---   sql-jev-laya gateway --host 0.0.0.0 --port 8443 --certfile cert.pem --keyfile key.pem   (SQLJEV_GATEWAY_TOKEN=...)
+--   sqljev gateway --host 0.0.0.0 --port 8443 --certfile cert.pem --keyfile key.pem   (SQLJEV_GATEWAY_TOKEN=...)
 --   EXEC sp_configure 'external rest endpoint enabled', 1; RECONFIGURE;                  (SQL Server 2025)
 --   CREATE DATABASE SCOPED CREDENTIAL [https://gateway.example.com]
 --     WITH IDENTITY = 'HTTPEndpointHeaders', SECRET = '{"X-Jev-Token":"<token>"}';      (needs a master key)

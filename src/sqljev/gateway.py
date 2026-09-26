@@ -1,10 +1,10 @@
-"""sql-jev-laya gateway: one HTTP service that answers the batch protocols databases use to call out.
+"""sqljev gateway: one HTTP service that answers the batch protocols databases use to call out.
 
-    sql-jev-laya gateway --port 8765            # Laya in-process (backend 'local') by default
+    sqljev gateway --port 8765            # Laya in-process (backend 'local') by default
 
 Routes (all POST, JSON):
 
-  /v1/eval               sql-jev-laya native: {"question", "kind", "options", "rows": [...]} -> {"answers": [...]}
+  /v1/eval               sqljev native: {"question", "kind", "options", "rows": [...]} -> {"answers": [...]}
   /sqlserver             same body; called by jev.judge through sp_invoke_external_rest_endpoint
   /bigquery              BigQuery remote functions: {"calls": [[args]], "userDefinedContext": {"fn": ...}}
                          -> {"replies": [...]}
@@ -36,7 +36,7 @@ def handle_eval(engine, body):
     kind = body.get("kind") or "noul"
     rows = body.get("rows")
     if not isinstance(rows, list) or not body.get("question"):
-        raise JevError("sql-jev-laya: body needs 'question' and a 'rows' array")
+        raise JevError("sqljev: body needs 'question' and a 'rows' array")
     return {"answers": engine.evaluate(rows, body["question"], kind, body.get("options"))}
 
 
@@ -44,7 +44,7 @@ def handle_bigquery(engine, body):
     ctx = body.get("userDefinedContext") or {}
     fn = ctx.get("fn") or ctx.get("function")
     if not fn:
-        raise JevError("sql-jev-laya: set user_defined_context = [('fn', 'jev_prob')] on the remote function")
+        raise JevError("sqljev: set user_defined_context = [('fn', 'jev_prob')] on the remote function")
     return {"replies": _json_safe(engine.call(fn, body.get("calls") or []))}
 
 
@@ -75,11 +75,11 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     engine = None
     token = None
-    server_version = "sql-jev-laya/" + __version__
+    server_version = "sqljev/" + __version__
 
     def log_message(self, fmt, *args):
         if os.environ.get("SQLJEV_GATEWAY_LOG"):
-            sys.stderr.write("sql-jev-laya gateway: " + fmt % args + "\n")
+            sys.stderr.write("sqljev gateway: " + fmt % args + "\n")
 
     def _send(self, code, obj):
         data = json.dumps(obj).encode()
@@ -133,7 +133,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:     # noqa: BLE001
             traceback.print_exc()
             return self._send(500, {"error": "internal error: %s" % type(e).__name__,
-                                    "errorMessage": "sql-jev-laya gateway internal error"})
+                                    "errorMessage": "sqljev gateway internal error"})
 
 
 def make_server(host="127.0.0.1", port=8765, engine=None, token=None):
@@ -163,7 +163,7 @@ def serve(host="127.0.0.1", port=8765, engine=None, token=None, certfile=None, k
         srv.get_request = get_request
         scheme = "https"
     eng = srv.RequestHandlerClass.engine
-    print("sql-jev-laya gateway %s on %s://%s:%d (backend %s)" % (__version__, scheme, host, port, eng.cfg["backend"]),
+    print("sqljev gateway %s on %s://%s:%d (backend %s)" % (__version__, scheme, host, port, eng.cfg["backend"]),
           file=sys.stderr)
     try:
         srv.serve_forever()

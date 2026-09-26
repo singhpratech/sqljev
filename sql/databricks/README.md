@@ -1,6 +1,6 @@
 # Databricks / Spark
 
-Install on the cluster (`%pip install "sql-jev-laya[laya]"`; GPU clusters: ML runtime with CUDA), then:
+Install on the cluster (`%pip install "sqljev[laya]"`; GPU clusters: ML runtime with CUDA), then:
 
 ```python
 import sqljev.spark

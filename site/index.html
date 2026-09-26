@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sql-jev-laya</title>
+<title>sqljev</title>
 <meta name="description" content="Ask your SQL rows questions in plain language. jev() for SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB, judged by Laya, an open-weights model you can fine-tune on your own tables.">
 <link rel="icon" href="assets/rowl.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,12 +276,12 @@ footer p { margin: 0 0 8px; max-width: 60em; }
 
 <nav class="top" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="#top"><span class="owl-slot" data-owl="mini"></span>sql-jev-laya</a>
+    <a class="brand" href="#top"><span class="owl-slot" data-owl="mini"></span>sqljev</a>
     <div class="links">
       <a class="opt" href="#databases">Databases</a>
       <a class="opt" href="#how">How it works</a>
       <a class="opt" href="#finetune">Fine-tune</a>
-      <a href="https://github.com/singhpratech/sql-jev-laya">GitHub</a>
+      <a href="https://github.com/singhpratech/sqljev">GitHub</a>
     </div>
   </div>
 </nav>
@@ -290,12 +290,12 @@ footer p { margin: 0 0 8px; max-width: 60em; }
   <div class="wrap">
     <div>
       <h1>Ask your tables questions in plain English.</h1>
-      <p class="lede">sql-jev-laya adds <strong>jev()</strong> to SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB.
+      <p class="lede">sqljev adds <strong>jev()</strong> to SQL Server, Snowflake, Databricks, BigQuery, Redshift and DuckDB.
         Every row is judged by <strong>Laya</strong>, an open-weights decision model that runs on your own hardware and
         learns from your own tables.</p>
       <div class="cta">
-        <a class="btn primary" href="https://github.com/singhpratech/sql-jev-laya">View on GitHub</a>
-        <span class="install"><code id="pip">pip install "sql-jev-laya[laya,db]"</code><button type="button" id="copy">Copy</button></span>
+        <a class="btn primary" href="https://github.com/singhpratech/sqljev">View on GitHub</a>
+        <span class="install"><code id="pip">pip install "sqljev[laya,db]"</code><button type="button" id="copy">Copy</button></span>
       </div>
     </div>
     <div class="stage" aria-label="Animated example: a SQL query judged row by row">
@@ -314,7 +314,7 @@ footer p { margin: 0 0 8px; max-width: 60em; }
   <div class="peek owl-slot" data-owl="peek"></div>
   <div class="wrap">
     <h2>Same functions, every database.</h2>
-    <p class="intro">Each database already hands its functions rows in batches. sql-jev-laya takes each batch as it comes,
+    <p class="intro">Each database already hands its functions rows in batches. sqljev takes each batch as it comes,
       so a thousand rows become a handful of forward passes, not a thousand calls.</p>
     <div class="dbs">
       <div class="tabs" role="tablist" aria-label="Database" id="tabs"></div>
@@ -396,7 +396,7 @@ footer p { margin: 0 0 8px; max-width: 60em; }
         <p><b>Laya</b> is Apache 2.0 with open weights. It runs on your GPU or CPU, so rows never leave your network and
           nothing is billed per token. Out of the box it is good at clear yes/no conditions and weaker at fine-grained choices.</p>
         <p><b>Jev</b> is TypeSafe's hosted model: stronger zero-shot, but your rows travel to an API and it cannot learn your domain.</p>
-        <p>Your tables are full of labels, which is why sql-jev-laya is built around fine-tuning Laya on them.</p>
+        <p>Your tables are full of labels, which is why sqljev is built around fine-tuning Laya on them.</p>
         <p class="src">Figures from Laya's published typed-decisions benchmark (T4 GPU for latency).</p>
       </div>
     </div>
@@ -412,24 +412,24 @@ footer p { margin: 0 0 8px; max-width: 60em; }
       <div class="ring" id="ring">
         <svg class="track" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42"/></svg>
         <div class="station" style="left:50%;top:8%">Labelled rows<small>any table with an answer column</small></div>
-        <div class="station" style="left:92%;top:50%">sql-jev-laya dataset<small>train / test JSONL</small></div>
+        <div class="station" style="left:92%;top:50%">sqljev dataset<small>train / test JSONL</small></div>
         <div class="station" style="left:50%;top:92%">Fine-tune<small>Laya notebook, free T4s</small></div>
-        <div class="station" style="left:8%;top:50%">sql-jev-laya eval<small>accuracy on your rows</small></div>
+        <div class="station" style="left:8%;top:50%">sqljev eval<small>accuracy on your rows</small></div>
         <div class="dot" id="dot"></div>
         <div class="center"><div class="owl-slot" data-owl="grad"></div><div class="acc">accuracy<b id="acc">0.362</b></div></div>
       </div>
       <div class="code-card"><pre><span class="tok-dim"># labelled rows in, training data out (the label is never shown to the model)</span>
-sql-jev-laya dataset "$DB_URL" <span class="tok-str">"SELECT subject, body, team FROM tickets"</span> \
+sqljev dataset "$DB_URL" <span class="tok-str">"SELECT subject, body, team FROM tickets"</span> \
     --label team --choice <span class="tok-str">"which team should handle this?"</span> \
     --test-fraction 0.2 -o tickets.jsonl
 
 <span class="tok-dim"># how does the base model do on YOUR rows? and Jev?</span>
-sql-jev-laya eval tickets.test.jsonl
-sql-jev-laya eval tickets.test.jsonl --backend jev
+sqljev eval tickets.test.jsonl
+sqljev eval tickets.test.jsonl --backend jev
 
 <span class="tok-dim"># fine-tune with Laya's notebook, then measure and serve</span>
-sql-jev-laya eval tickets.test.jsonl --model ./checkpoints/tickets --min-accuracy 0.85
-SQLJEV_MODEL=./checkpoints/tickets sql-jev-laya gateway --host 0.0.0.0</pre></div>
+sqljev eval tickets.test.jsonl --model ./checkpoints/tickets --min-accuracy 0.85
+SQLJEV_MODEL=./checkpoints/tickets sqljev gateway --host 0.0.0.0</pre></div>
     </div>
   </div>
 </section>
@@ -454,7 +454,7 @@ SQLJEV_MODEL=./checkpoints/tickets sql-jev-laya gateway --host 0.0.0.0</pre></di
   <div class="wrap">
     <div class="owl-slot" data-owl="foot" style="width:90px"></div>
     <div>
-      <p><b>sql-jev-laya</b> is Apache 2.0. It is inspired by and partly ported from
+      <p><b>sqljev</b> is Apache 2.0. It is inspired by and partly ported from
         <a href="https://github.com/realZachi/pg-jev">pg-jev</a>, which does this inside PostgreSQL.</p>
       <p>Laya is by Convai Innovations (<a href="https://github.com/NandhaKishorM/laya">github.com/NandhaKishorM/laya</a>, Apache 2.0).
         Jev and TypeSafe are trademarks of their respective owners. This project is not affiliated with TypeSafe or Convai Innovations.</p>
@@ -619,7 +619,7 @@ SQLJEV_MODEL=./checkpoints/tickets sql-jev-laya gateway --host 0.0.0.0</pre></di
 
   // ------------------------------------------------ database tabs
   const DBS = [
-    ["SQL Server", "2016 and later, Azure SQL", "jev.judge sends new rows to the gateway in batches of 500 (or run sql-jev-laya judge-sqlserver from outside); jev.prob reads the stored answer with an index seek.",
+    ["SQL Server", "2016 and later, Azure SQL", "jev.judge sends new rows to the gateway in batches of 500 (or run sqljev judge-sqlserver from outside); jev.prob reads the stored answer with an index seek.",
       "EXEC jev.judge N'dbo.tickets', N'the customer is angry';\n\nSELECT * FROM dbo.tickets AS t\nWHERE jev.prob((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n               N'the customer is angry') >= 0.5;\n\nSELECT jev.choice((SELECT t.* FOR JSON PATH, WITHOUT_ARRAY_WRAPPER),\n                  N'which team?', N'[\"billing\",\"technical\",\"sales\"]') AS team\nFROM dbo.tickets AS t;"],
     ["Snowflake", "Laya inside Snowpark Container Services", "Service functions receive up to 1,000 rows per call; Laya runs on a GPU compute pool, so rows never leave your account.",
       "SELECT * FROM tickets t\nWHERE jev(OBJECT_CONSTRUCT(t.*), 'the customer is angry');\n\nSELECT jev_choice(OBJECT_CONSTRUCT(t.*), 'which team should handle this?',\n                  ['billing', 'technical', 'sales']) AS team, COUNT(*)\nFROM tickets t GROUP BY team;"],
@@ -629,8 +629,8 @@ SQLJEV_MODEL=./checkpoints/tickets sql-jev-laya gateway --host 0.0.0.0</pre></di
       "SELECT * FROM `proj.support.tickets` t\nWHERE jev.jev(TO_JSON_STRING(t), 'the customer is angry');\n\nSELECT jev.jev_choice(TO_JSON_STRING(t), 'which team?',\n                      '[\"billing\",\"technical\",\"sales\"]') AS team\nFROM `proj.support.tickets` t;"],
     ["Redshift", "Lambda UDFs", "Redshift sends row batches to a tiny stdlib-only Lambda that forwards them to your gateway.",
       "SELECT * FROM tickets\nWHERE jev(JSON_SERIALIZE(OBJECT('subject', subject, 'body', body)),\n          'the customer is angry');"],
-    ["DuckDB", "and the sql-jev-laya CLI for anything else", "Arrow UDFs see 2,048 rows at a time. The CLI does the same for Postgres, MySQL, Oracle and any SQLAlchemy URL.",
-      "import duckdb, sqljev.duckdb\ncon = duckdb.connect('support.duckdb')\nsqljev.duckdb.register(con)\n\nSELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry');\n\n# any other database, from the shell:\n# sql-jev-laya query \"$DB_URL\" \"SELECT * FROM tickets\" --where \"the customer is angry\""],
+    ["DuckDB", "and the sqljev CLI for anything else", "Arrow UDFs see 2,048 rows at a time. The CLI does the same for Postgres, MySQL, Oracle and any SQLAlchemy URL.",
+      "import duckdb, sqljev.duckdb\ncon = duckdb.connect('support.duckdb')\nsqljev.duckdb.register(con)\n\nSELECT * FROM tickets t WHERE jev(to_json(t), 'the customer is angry');\n\n# any other database, from the shell:\n# sqljev query \"$DB_URL\" \"SELECT * FROM tickets\" --where \"the customer is angry\""],
   ];
   const tabs = $("#tabs"); let typing = 0;
   DBS.forEach(([name, sub], i) => {
